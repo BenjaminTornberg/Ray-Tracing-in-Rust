@@ -58,8 +58,8 @@ fn main() {
 
     let material_ground = MatPtr(Rc::new(Lambertian{albedo: color( 0.8, 0.8, 0.0)}));
     let material_center = MatPtr(Rc::new(Lambertian{albedo: color(0.7, 0.3, 0.3)}));
-    let material_left = MatPtr(Rc::new(Metal{albedo:color(0.8, 0.8, 0.8)}));
-    let material_right = MatPtr(Rc::new(Metal{albedo: color(0.8, 0.6, 0.2)}));
+    let material_left = MatPtr(Rc::new(Metal{albedo:color(0.8, 0.8, 0.8), fuzz: 0.3}));
+    let material_right = MatPtr(Rc::new(Metal{albedo: color(0.8, 0.6, 0.2), fuzz: 1.0}));
     
 
     world.add(Rc::new(

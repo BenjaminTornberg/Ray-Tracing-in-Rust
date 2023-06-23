@@ -3,6 +3,8 @@ use super::ray::*;
 use std::fmt::Debug;
 use std::mem;
 use std::rc::Rc;
+use super::material::*;
+
 
 #[derive(Debug, Default)]
 pub struct HittableList{
@@ -31,10 +33,12 @@ impl Hittable for HittableList{
     }
 }
 
+
 #[derive(Debug, Default)]
 pub struct HitRecord{
     pub p: Point3,
     pub normal: Vec3,
+    pub mat_ptr: MatPtr,
     pub t: f64,
     pub front_face: bool
 }
@@ -55,5 +59,21 @@ pub trait Hittable{
 impl Debug for dyn Hittable{
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "DO NOT KNOW WHY THE FUCK I GOTTA WRITE THIS SHIT")
+    }
+}
+
+
+#[derive(Clone)]
+pub struct MatPtr(pub Rc<dyn Material>);
+
+impl Default for MatPtr{
+    fn default() -> Self {
+        MatPtr(Rc::new(BlankMaterial{..Default::default()}))
+    }
+}
+
+impl Debug for MatPtr{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "GHAHAHAHA I HATE THIS SHIT")
     }
 }

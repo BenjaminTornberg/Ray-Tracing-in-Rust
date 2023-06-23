@@ -29,6 +29,11 @@ impl Vec3{
         Self(random_double_range(min, max), random_double_range(min, max), random_double_range(min, max)) 
     }
 
+    pub fn zero_near(&self) -> bool{
+        let s = 1e-8;
+        (self.0.abs() < s) && (self.1.abs() < s) && (self.2.abs() < s) 
+    } 
+
 }
 
 impl std::ops::Neg for Vec3{
@@ -128,6 +133,11 @@ pub fn random_in_unit_sphere() -> Vec3{
 pub fn random_unit_vector() -> Vec3 {
     unit_vector(random_in_unit_sphere())
 }
+
+pub fn reflect(v: Vec3, n: Vec3)-> Vec3{
+    v - 2.0*dot(v, n)*n
+}
+
 
 pub fn write_point(p: Point3,){
     println!("{} {} {}", p.x(), p.y(), p.z())

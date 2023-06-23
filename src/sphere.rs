@@ -2,10 +2,11 @@ use super::vector::*;
 use super::hittable::*;
 use super::ray::*;
 
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct Sphere{
     pub center: Point3,
-    pub radius: f64
+    pub radius: f64,
+    pub mat_ptr: MatPtr
 }
 impl Hittable for Sphere{
     fn hit(&self, r: &Ray, t_min: f64, t_max: f64,mut rec: &mut HitRecord) -> bool{
@@ -27,11 +28,11 @@ impl Hittable for Sphere{
                 return false;
             }
         }
-
         rec.t = root;
         rec.p = r.at(rec.t);
         let outward_normal = (rec.p - self.center) / self.radius;
         rec.set_face_normal(r, outward_normal);
+        rec.mat_ptr = self.mat_ptr.clone();
         true
     }
 }

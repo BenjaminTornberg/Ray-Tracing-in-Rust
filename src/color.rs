@@ -14,3 +14,7 @@ pub fn write_colour(pixel_color: Color, samples_per_pixel: i32){
 
     println!("{r} {g} {b}")
 }
+
+pub fn color(r: f64, g: f64, b: f64) -> Color{
+    Vec3(r, g, b)
+}

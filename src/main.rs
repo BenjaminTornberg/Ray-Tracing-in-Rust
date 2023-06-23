@@ -10,6 +10,8 @@ pub mod sphere;
 pub mod camera;
 pub mod utils;
 pub mod color;
+pub mod material;
+use material::*;
 use color::*;
 use utils::*;
 use camera::*;
@@ -25,10 +27,18 @@ fn ray_color(r: Ray,  world: &HittableList, depth: i32) -> Color{
     if depth <= 0{
         return Vec3(0.0, 0.0, 0.0);
     }
+
     if world.hit(&r, 0.001, INF, &mut rec){
-        let target = rec.p + rec.normal + random_unit_vector();
-        return 0.5 * ray_color(Ray{orig: rec.p, dir: target - rec.p }, world, depth-1)
+        let mut scattered =  Ray{..Default::default()};
+        let mut attenuation = Vec3{..Default::default()};
+
+        if rec.mat_ptr.0.scatter(&r, &rec, &mut attenuation, &mut scattered){
+            return attenuation * ray_color(scattered, world, depth-1);
+        }
+
+        return color(0.0,0.0,0.0);
     }
+
     let unit_direction = unit_vector(r.direction());
     let t = 0.5 * (unit_direction.y() + 1.0);
     (1.0-t)*Vec3(1.0, 1.0, 1.0) + t*Vec3(0.5, 0.7, 1.0)
@@ -45,15 +55,37 @@ fn main() {
 
     //world
     let mut world: HittableList = HittableList{..Default::default()};
+
+    let material_ground = MatPtr(Rc::new(Lambertian{albedo: color( 0.8, 0.8, 0.0)}));
+    let material_center = MatPtr(Rc::new(Lambertian{albedo: color(0.7, 0.3, 0.3)}));
+    let material_left = MatPtr(Rc::new(Metal{albedo:color(0.8, 0.8, 0.8)}));
+    let material_right = MatPtr(Rc::new(Metal{albedo: color(0.8, 0.6, 0.2)}));
+    
+
     world.add(Rc::new(
-            Sphere{ center: Vec3(0.0, 0.0, -1.0 ),
-                    radius: 0.5
-        }));
+        Sphere{
+            center: Vec3(0.0, -100.5, -1.0),
+            radius: 100.0,
+            mat_ptr: material_ground
+    }));
+
     world.add(Rc::new(
-            Sphere{
-                center: Vec3(0.0, -100.5, -1.0),
-                radius: 100.0
-        }));
+        Sphere{ center: Vec3(0.0, 0.0, -1.0 ),
+                radius: 0.5,
+                mat_ptr: material_center
+    }));
+    world.add(Rc::new(
+        Sphere{
+            center: Vec3(1.0, 0.0, -1.0),
+            radius: 0.5,
+            mat_ptr: material_right
+    }));
+    world.add(Rc::new(
+        Sphere{
+            center: Vec3(-1.0, 0.0, -1.0),
+            radius: 0.5,
+            mat_ptr: material_left
+    }));
 
     //camera
     let cam = basic_camera();
@@ -66,7 +98,7 @@ fn main() {
     for j in (0..image_height).rev(){
         eprintln!("\rscanlines remaining: {j} ");
         for i in 0..image_width{
-            let mut pixel_color: Color = Vec3(0.0, 0.0, 0.0);
+            let mut pixel_color: Color = color(0.0, 0.0, 0.0);
 
             for _ in 0..samples_per_pixel{
                 //gives you a value of 0.0 to 1.0 that represents a spot onthe screen

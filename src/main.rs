@@ -25,8 +25,8 @@ fn ray_color(r: Ray,  world: &HittableList, depth: i32) -> Color{
     if depth <= 0{
         return Vec3(0.0, 0.0, 0.0);
     }
-    if world.hit(&r, 0.0, INF, &mut rec){
-        let target = rec.p + rec.normal + random_in_unit_sphere();
+    if world.hit(&r, 0.001, INF, &mut rec){
+        let target = rec.p + rec.normal + random_unit_vector();
         return 0.5 * ray_color(Ray{orig: rec.p, dir: target - rec.p }, world, depth-1)
     }
     let unit_direction = unit_vector(r.direction());
@@ -51,7 +51,7 @@ fn main() {
         }));
     world.add(Rc::new(
             Sphere{
-                center: Vec3(0.0, -100.5, -10.0),
+                center: Vec3(0.0, -100.5, -1.0),
                 radius: 100.0
         }));
 

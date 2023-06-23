@@ -22,6 +22,13 @@ impl Vec3{
     pub fn sqrlen(&self) -> f64{
         self.0*self.0 + self.1*self.1 + self.2*self.2
     }
+
+    pub fn random() -> Self { Self(random_double(), random_double(), random_double())}
+
+    pub fn random_range(min: f64, max: f64) -> Self { 
+        Self(random_double_range(min, max), random_double_range(min, max), random_double_range(min, max)) 
+    }
+
 }
 
 impl std::ops::Neg for Vec3{
@@ -110,21 +117,14 @@ pub fn unit_vector(v: Vec3)-> Vec3{
     v / l
 }
 
-pub fn write_point(p: Point3,){
-    println!("{} {} {}", p.x(), p.y(), p.z())
+pub fn random_in_unit_sphere() -> Vec3{
+    loop {
+        let p = Vec3::random_range( -1.0, 1.0);
+        if p.sqrlen() >= 1.0 { continue }
+        return p;
+    }
 }
 
-pub fn write_colour(pixel_color: Color, samples_per_pixel: i32){
-    
-    //divide the color by the number of smples
-    let scale = 1.0 / samples_per_pixel as f64;
-    let r = pixel_color.r() * scale;
-    let g = pixel_color.g() * scale;
-    let b = pixel_color.b() * scale;
-
-    let r = (255.0 * clamp(r, 0.0, 0.999)) as i32;
-    let g = (255.0 * clamp(g, 0.0, 0.999)) as i32;
-    let b = (255.0 * clamp(b, 0.0, 0.999)) as i32;
-
-    println!("{r} {g} {b}")
+pub fn write_point(p: Point3,){
+    println!("{} {} {}", p.x(), p.y(), p.z())
 }

@@ -9,6 +9,8 @@ pub mod hittable;
 pub mod sphere;
 pub mod camera;
 pub mod utils;
+pub mod color;
+use color::*;
 use utils::*;
 use camera::*;
 use vector::*;
@@ -17,10 +19,15 @@ use hittable::*;
 use sphere::*;
 use std::rc::Rc;
 
-fn ray_color(r: Ray,  world: &HittableList) -> Color{
+fn ray_color(r: Ray,  world: &HittableList, depth: i32) -> Color{
     let mut rec = HitRecord{ ..Default::default() };
+
+    if depth <= 0{
+        return Vec3(0.0, 0.0, 0.0);
+    }
     if world.hit(&r, 0.0, INF, &mut rec){
-        return 0.5 * (rec.normal + Vec3(1.0, 1.0, 1.0))
+        let target = rec.p + rec.normal + random_in_unit_sphere();
+        return 0.5 * ray_color(Ray{orig: rec.p, dir: target - rec.p }, world, depth-1)
     }
     let unit_direction = unit_vector(r.direction());
     let t = 0.5 * (unit_direction.y() + 1.0);
@@ -34,6 +41,7 @@ fn main() {
     let image_width = 400;
     let image_height = (image_width as f64 / aspect_ratio) as i32;
     let samples_per_pixel = 100;
+    let max_depth = 50;
 
     //world
     let mut world: HittableList = HittableList{..Default::default()};
@@ -66,7 +74,7 @@ fn main() {
                 let v = (j as f64 + random_double()) / (image_height - 1) as f64;
 
                 let r = cam.get_ray(u, v);
-                pixel_color += ray_color(r, &world);
+                pixel_color += ray_color(r, &world, max_depth);
             }
 
             write_colour(pixel_color, samples_per_pixel);

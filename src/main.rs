@@ -61,6 +61,7 @@ fn main() {
             let mut pixel_color: Color = Vec3(0.0, 0.0, 0.0);
 
             for _ in 0..samples_per_pixel{
+                //gives you a value of 0.0 to 1.0 that represents a spot onthe screen
                 let u = (i as f64 + random_double()) / (image_width - 1) as f64;
                 let v = (j as f64 + random_double()) / (image_height - 1) as f64;
 

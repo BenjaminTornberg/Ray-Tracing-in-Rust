@@ -1,6 +1,6 @@
 use super::utils::*;
 
-#[derive(Default, Debug, Copy, Clone)]
+#[derive(Default, Debug, Copy, Clone, PartialEq)]
 pub struct Vec3(pub f64, pub f64, pub f64);
 
 pub type Point3 = Vec3;
@@ -138,6 +138,18 @@ pub fn reflect(v: Vec3, n: Vec3)-> Vec3{
     v - 2.0*dot(v, n)*n
 }
 
+pub fn refract(uv: Vec3, n: Vec3, etai_over_etat: f64) -> Vec3{
+    let cos_theta = dot(-uv, n).min(1.0);
+    let r_out_perp =  etai_over_etat * (uv + n *cos_theta);
+    let r_out_parallel = n * (-1.0) * (1.0 - r_out_perp.sqrlen()).abs().sqrt();
+    r_out_perp + r_out_parallel
+}
+
+pub fn reflectance(cos: f64, ref_idx: f64) -> f64{
+    let mut r0 = (1.0 - ref_idx) / (1.0 + ref_idx);
+    r0 = r0 * r0;
+    r0 + (1.0 - r0) * (1.0 - cos).powi(5)
+}
 
 pub fn write_point(p: Point3,){
     println!("{} {} {}", p.x(), p.y(), p.z())

@@ -21,27 +21,51 @@ use hittable::*;
 use sphere::*;
 use std::rc::Rc;
 
-fn ray_color(r: Ray,  world: &HittableList, depth: i32) -> Color{
-    let mut rec = HitRecord{ ..Default::default() };
+//TODO: create tests
 
+//TODO: make the project more Rust-like
+
+fn ray_color(r: Ray,  world: &HittableList, depth: i32) -> Color{
     if depth <= 0{
         return color(0.0, 0.0, 0.0);
     }
 
-    if world.hit(&r, 0.001, INF, &mut rec){
-        let mut scattered =  Ray{..Default::default()};
-        let mut attenuation = Vec3{..Default::default()};
+    let hit = world.hit(&r, 0.001, INF);
 
-        if rec.mat_ptr.0.scatter(&r, &rec, &mut attenuation, &mut scattered){
-            return attenuation * ray_color(scattered, world, depth-1);
+    match hit {
+        Some(hit_record) => {
+            let scattered = hit_record.mat_ptr.0.scatter(&r, &hit_record);
+            match scattered{
+                Some((albedo, scattered_ray)) => { 
+                    let rgb = color(0.0, 0.0, 0.0);
+                    //let prob = 0.1;
+                    match scattered_ray {
+                        Some(sr) => {
+                            let target_color = ray_color(sr, world, depth-1);
+
+                            color(
+                                clamp(rgb.r() + albedo.r() * target_color.r(), 0.0, 1.0),
+                                clamp(rgb.g() + albedo.g() * target_color.g(), 0.0, 1.0),
+                                clamp(rgb.b() + albedo.b() * target_color.b(), 0.0, 1.0)
+                            )
+                        }
+                        None => albedo
+                    }
+
+                    
+                },
+                None => { return color(0.0, 0.0, 0.0)}
+
+            }
+
+        },
+        None => {
+            let unit_direction = unit_vector(r.direction());
+            let t = 0.5 * (unit_direction.y() + 1.0);
+            return (1.0-t)*color(1.0, 1.0, 1.0) + t*color(0.5, 0.7, 1.0);
         }
 
-        return color(0.0,0.0,0.0);
     }
-
-    let unit_direction = unit_vector(r.direction());
-    let t = 0.5 * (unit_direction.y() + 1.0);
-    (1.0-t)*color(1.0, 1.0, 1.0) + t*color(0.5, 0.7, 1.0)
 }
 
 fn main() {
@@ -54,13 +78,14 @@ fn main() {
     let max_depth = 50;
 
     //world
+    //let R = (PI/4.0).cos();
+
     let mut world: HittableList = HittableList{..Default::default()};
 
     let material_ground = MatPtr(Rc::new(Lambertian{albedo: color( 0.8, 0.8, 0.0)}));
-    let material_center = MatPtr(Rc::new(Lambertian{albedo: color(0.7, 0.3, 0.3)}));
-    let material_left = MatPtr(Rc::new(Metal{albedo:color(0.8, 0.8, 0.8), fuzz: 0.3}));
+    let material_center =  MatPtr(Rc::new(Lambertian{albedo: color( 0.2, 0.3, 0.6)}));
+    let material_left = MatPtr(Rc::new(Dielectric{ir: 1.5}));
     let material_right = MatPtr(Rc::new(Metal{albedo: color(0.8, 0.6, 0.2), fuzz: 1.0}));
-    
 
     world.add(Rc::new(
         Sphere{
@@ -82,13 +107,24 @@ fn main() {
     }));
     world.add(Rc::new(
         Sphere{
+            center: Vec3(1.0, 0.0, -1.0),
+            radius: -0.4,
+            mat_ptr: material_left.clone()
+    }));
+    world.add(Rc::new(
+        Sphere{
             center: Vec3(-1.0, 0.0, -1.0),
             radius: 0.5,
             mat_ptr: material_left
     }));
 
     //camera
-    let cam = basic_camera();
+    let look_from = Vec3(-2.0, 2.0, 1.0);
+    let look_at = Vec3(0.0, 0.0, -1.0);
+    let vup = Vec3(0.0, 1.0, 0.0);
+    let aspect_ratio = 16.0 / 9.0;
+    let vfov = 20.0;
+    let cam = Camera::new(look_from, look_at, vup, vfov, aspect_ratio);
 
     // Rendering to ppm
     println!("P3");

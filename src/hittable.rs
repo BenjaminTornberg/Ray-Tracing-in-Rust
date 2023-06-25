@@ -1,7 +1,6 @@
 use super::vector::*;
 use super::ray::*;
 use std::fmt::Debug;
-use std::mem;
 use std::rc::Rc;
 use super::material::*;
 
@@ -17,24 +16,23 @@ impl HittableList{
 }
 
 impl Hittable for HittableList{
-    fn hit(&self, r: &Ray, t_min: f64, t_max: f64, rec: &mut HitRecord)-> bool {
-        let mut tmp_rec = HitRecord{..Default::default()};
-        let mut hit_anything = false;
+    fn hit(&self, r: &Ray, t_min: f64, t_max: f64)-> Option<HitRecord> {
+        let mut hit_record = None;
         let mut closest_so_far = t_max;
        
         for object in self.objects.iter(){
-            if  object.hit(r, t_min, closest_so_far, &mut tmp_rec){
-                hit_anything = true;
-                closest_so_far = tmp_rec.t;
-                mem::swap(rec, &mut tmp_rec)
+
+            if let Some(hit) = object.hit(r, t_min, closest_so_far){
+                closest_so_far = hit.t;
+                hit_record = Some(hit);
             }
         }
-        hit_anything   
+        hit_record
     }
 }
 
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct HitRecord{
     pub p: Point3,
     pub normal: Vec3,
@@ -46,14 +44,14 @@ pub struct HitRecord{
 
 impl HitRecord{
     pub fn set_face_normal(&mut self, r: &Ray, outward_normal: Vec3){
-        let front_face = dot(self.normal, r.direction()) > 0.0;
-        self.normal = if front_face { - outward_normal } else { outward_normal };
+        self.front_face = dot(self.normal, r.direction()) < 0.0;
+        self.normal = if self.front_face { unit_vector(outward_normal) } else { - unit_vector(outward_normal) };
     }
 
 }
 
 pub trait Hittable{
-    fn hit(&self, r: &Ray, t_min: f64, t_max: f64, rec: &mut HitRecord)-> bool;
+    fn hit(&self, r: &Ray, t_min: f64, t_max: f64)-> Option<HitRecord>;
 }
 
 impl Debug for dyn Hittable{

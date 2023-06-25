@@ -54,6 +54,7 @@ pub struct BlankMaterial{
 }
 impl Material for BlankMaterial{
     fn scatter(&self, _ray_in: &Ray, _rec: &HitRecord, _attenuation: &mut Color, _scattered:  &mut Ray) -> bool {
+    eprintln!("ERROR: BlankMaterial");
         false
     }
 }

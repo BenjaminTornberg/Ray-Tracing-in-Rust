@@ -25,7 +25,7 @@ fn ray_color(r: Ray,  world: &HittableList, depth: i32) -> Color{
     let mut rec = HitRecord{ ..Default::default() };
 
     if depth <= 0{
-        return Vec3(0.0, 0.0, 0.0);
+        return color(0.0, 0.0, 0.0);
     }
 
     if world.hit(&r, 0.001, INF, &mut rec){
@@ -41,7 +41,7 @@ fn ray_color(r: Ray,  world: &HittableList, depth: i32) -> Color{
 
     let unit_direction = unit_vector(r.direction());
     let t = 0.5 * (unit_direction.y() + 1.0);
-    (1.0-t)*Vec3(1.0, 1.0, 1.0) + t*Vec3(0.5, 0.7, 1.0)
+    (1.0-t)*color(1.0, 1.0, 1.0) + t*color(0.5, 0.7, 1.0)
 }
 
 fn main() {

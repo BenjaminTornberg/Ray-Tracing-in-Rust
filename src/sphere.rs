@@ -1,3 +1,8 @@
+#[cfg(test)]
+use std::rc::Rc;
+#[cfg(test)]
+use crate::material::Dielectric;
+
 use super::vector::*;
 use super::hittable::*;
 use super::ray::*;
@@ -15,37 +20,37 @@ impl Hittable for Sphere{
         let half_b = dot(oc, r.direction());
         let c = oc.sqrlen() - self.radius*self.radius;
 
-        let discriminant = half_b*half_b - a*c;
+        let discriminant = (half_b * half_b) - (a *c);
 
-        if discriminant < 0.0 { return None } 
+        if discriminant >= 0.0 {
+            let sqrtd = discriminant.sqrt();
+            let root_a = ((-half_b) - sqrtd) / a;
+            let root_b = ((-half_b) + sqrtd) / a;
+            for root in [root_a, root_b].iter() {
+                if *root < t_max && *root > t_min {
+                    let p = r.at(*root);
+                    let normal = (p - self.center) / self.radius;
+                    let front_face = dot(r.dir,normal) < 0.0;
 
-        let sqrtd = discriminant.sqrt();
-
-        // this finds the nearest root that lies in the range
-        let mut root = (-half_b - sqrtd) / a;
-        if root < t_min || t_max < root{
-            root = (-half_b + sqrtd) / a;
-            if root < t_min || t_max < root{
-                return None;
+                    return Some(HitRecord {
+                        t: *root,
+                        normal: if front_face { normal } else { -normal },
+                        front_face,
+                        p,
+                        mat_ptr: self.mat_ptr.clone(),
+                    });
+                }
             }
         }
-        let p = r.at(root);
-        let normal = (p - self.center) / self.radius;
-        let front_face = dot(r.dir, normal) < 0.0;
-
-        Some(HitRecord{
-            p,
-            t: root,
-            normal: if front_face { normal } else { -normal },
-            mat_ptr: self.mat_ptr.clone(),
-            front_face: front_face,
-        })
-
-        /*rec.t = root;
-        rec.p = r.at(rec.t);
-        let outward_normal = (rec.p - self.center) / self.radius;
-        rec.set_face_normal(r, outward_normal);
-        rec.mat_ptr = self.mat_ptr.clone();
-        true*/
+        None
     }
+}
+
+#[test]
+fn test_sphere_hit() {
+    let center = Vec3(0.0, 0.0, 0.0);
+    let sphere = Sphere{center, radius: 1.0, mat_ptr: MatPtr(Rc::new(Dielectric{ir: 1.5}))};
+    let ray = ray(Vec3(0.0, 0.0, -5.0), Vec3(0.0, 0.0, 1.0));
+    let hit = sphere.hit(&ray, 0.0, f64::INFINITY);
+    assert_eq!(hit.unwrap().t, 4.0);
 }

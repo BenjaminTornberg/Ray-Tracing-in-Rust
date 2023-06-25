@@ -60,9 +60,11 @@ pub struct Dielectric{
 }
 //some shit is wrong with this
 //almost like i'm seeing the reflections from the back and flipped
+//sky is beeing fracted in incorrect places
+//distorted refractions
 impl Material for Dielectric{
     fn scatter(&self, ray_in: &Ray, rec: &HitRecord) -> Option<(Color, Option<Ray>)> {
-        let refraction_ratio = if rec.front_face { 1.0/self.ir } else { self.ir };
+        let refraction_ratio = if !rec.front_face { 1.0/self.ir } else { self.ir };
 
         let unit_direction = unit_vector(ray_in.direction());
         let cos_theta = dot(-unit_direction, rec.normal).min(1.0);
@@ -90,6 +92,15 @@ fn test_refract() {
     let etai_over_etat = 1.0;
     let expected = Vec3(0.0, 1.0, 0.0);
     let actual = refract(uv, n, etai_over_etat);
+    assert_eq!(actual, expected);
+}
+  
+#[test]
+fn test_reflectance() {
+    let cosine = 0.0;
+    let ref_idx = 1.5;
+    let expected = 1.0;
+    let actual = reflectance(cosine, ref_idx);
     assert_eq!(actual, expected);
 }
 

@@ -6,44 +6,53 @@
 pub mod vector;
 pub mod ray;
 pub mod hittable;
-pub mod sphere;
+pub mod objects;
 pub mod camera;
 pub mod utils;
-pub mod color;
+pub mod image_object;
 pub mod material;
+pub mod config;
 use material::*;
-use color::*;
 use utils::*;
 use camera::*;
 use vector::*;
 use ray::*;
 use hittable::*;
-use sphere::*;
-use std::rc::Rc;
+use objects::*;
+use std::time::Instant;
+use std::sync::{Arc, Mutex};
+use std::sync::mpsc::{channel, TryRecvError};
+use image_object::Image;
+
+
 
 //TODO: create tests
-
 //TODO: make the project more Rust-like
+//TODO: fix Dielectric Material
+
+use std::thread;
+
+// Define the number of threads
+const NUM_THREADS: usize = 4;
 
 fn ray_color(r: Ray,  world: &HittableList, depth: i32) -> Color{
     if depth <= 0{
-        return color(0.0, 0.0, 0.0);
+        return Vec3::color(0.0, 0.0, 0.0);
     }
-
-    let hit = world.hit(&r, 0.001, INF);
+    let hit = world.hit(&r, 0.0001, INF);
 
     match hit {
         Some(hit_record) => {
-            let scattered = hit_record.mat_ptr.0.scatter(&r, &hit_record);
+            let scattered = hit_record.material.scatter(&r, &hit_record);
             match scattered{
                 Some((albedo, scattered_ray)) => { 
-                    let rgb = color(0.0, 0.0, 0.0);
+                    let rgb = Vec3::color(0.0, 0.0, 0.0);
                     //let prob = 0.1;
                     match scattered_ray {
                         Some(sr) => {
                             let target_color = ray_color(sr, world, depth-1);
 
-                            color(
+                            Vec3::color(
                                 clamp(rgb.r() + albedo.r() * target_color.r(), 0.0, 1.0),
                                 clamp(rgb.g() + albedo.g() * target_color.g(), 0.0, 1.0),
                                 clamp(rgb.b() + albedo.b() * target_color.b(), 0.0, 1.0)
@@ -51,10 +60,8 @@ fn ray_color(r: Ray,  world: &HittableList, depth: i32) -> Color{
                         }
                         None => albedo
                     }
-
-                    
                 },
-                None => { return color(0.0, 0.0, 0.0)}
+                None => { return Vec3::color(0.0, 0.0, 0.0)}
 
             }
 
@@ -62,7 +69,7 @@ fn ray_color(r: Ray,  world: &HittableList, depth: i32) -> Color{
         None => {
             let unit_direction = unit_vector(r.direction());
             let t = 0.5 * (unit_direction.y() + 1.0);
-            return (1.0-t)*color(1.0, 1.0, 1.0) + t*color(0.5, 0.7, 1.0);
+            return (1.0-t)*Vec3::color(1.0, 1.0, 1.0) + t*Vec3::color(0.5, 0.7, 1.0);
         }
 
     }
@@ -72,154 +79,85 @@ fn main() {
 
     //image
     let aspect_ratio = 3.0 / 2.0;
-    let image_width = 800;
+    let image_width = 400;
     let image_height = (image_width as f64 / aspect_ratio) as i32;
     let samples_per_pixel = 100;
     let max_depth = 50;
+    let image = Image::new(image_width as u32, image_height as u32);
 
     //world
-    let world = random_scene();
-    /* 
-    let mut world: HittableList = HittableList{..Default::default()};
-
-    let material_ground = MatPtr(Rc::new(Lambertian{albedo: color( 0.8, 0.8, 0.0)}));
-    let material_center =  MatPtr(Rc::new(Lambertian{albedo: color( 0.2, 0.3, 0.6)}));
-    let material_left = MatPtr(Rc::new(Dielectric{ir: 1.7}));
-    let material_right = MatPtr(Rc::new(Metal{albedo: color(0.8, 0.6, 0.2), fuzz: 1.0}));
-
-    world.add(Rc::new(
-        Sphere{
-            center: Vec3(0.0, -100.5, -1.0),
-            radius: 100.0,
-            mat_ptr: material_ground
-    }));
-
-    world.add(Rc::new(
-        Sphere{ center: Vec3(0.0, 0.0, -1.0 ),
-                radius: 0.5,
-                mat_ptr: material_center
-    }));
-    world.add(Rc::new(
-        Sphere{
-            center: Vec3(1.0, 0.0, -1.0),
-            radius: 0.5,
-            mat_ptr: material_right
-    }));
-    world.add(Rc::new(
-        Sphere{
-            center: Vec3(1.0, 0.0, -1.0),
-            radius: -0.4,
-            mat_ptr: material_left.clone()
-    }));
-    world.add(Rc::new(
-        Sphere{
-            center: Vec3(-1.0, 0.0, -1.0),
-            radius: 0.5,
-            mat_ptr: material_left
-    }));
-     */
+    //let world = random_scene();
+    
+    let world = config::test_scene();
+    
+     
     //camera
     let look_from = Vec3(13.0, 2.0, 3.0);
     let look_at = Vec3(0.0, 0.0, 0.0);
     let vup = Vec3(0.0, 1.0, 0.0);
-    let aspect_ratio = 3.0 / 2.0;
     let vfov = 20.0;
+    //let dist_to_focus = (look_from - look_at).len();
+    //let aperture = 2.0;
     let cam = Camera::new(look_from, look_at, vup, vfov, aspect_ratio);
 
-    // Rendering to ppm
-    println!("P3");
-    println!("{image_width} {image_height}");
-    println!("255");
+    //let tile_width = image_width / NUM_THREADS;
 
-    for j in (0..image_height).rev(){
-        eprintln!("\rscanlines remaining: {j} ");
-        for i in 0..image_width{
-            let mut pixel_color: Color = color(0.0, 0.0, 0.0);
+    let world_arc = Arc::new(Mutex::new(world));
+    let image_mutex = Arc::new(Mutex::new(image));
 
-            for _ in 0..samples_per_pixel{
-                //gives you a value of 0.0 to 1.0 that represents a spot onthe screen
-                let u = (i as f64 + random_double()) / (image_width - 1) as f64;
-                let v = (j as f64 + random_double()) / (image_height - 1) as f64;
+    let start = Instant::now();
 
-                let r = cam.get_ray(u, v);
-                pixel_color += ray_color(r, &world, max_depth);
-            }
+    // Create a work queue using a channel
+    let (tx, rx) = channel::<(u32, u32)>();
 
-            write_colour(pixel_color, samples_per_pixel);
+    // Enqueue all tiles into the work queue
+    for j in (0..image_height).rev() {
+        for i in 0..image_width {
+            tx.send((i as u32, j as u32)).unwrap();
         }
     }
-    eprintln!("\nDone!! ")
+    
+    let rx_arc = Arc::new(Mutex::new(rx));
 
-}
+    let handles: Vec<_> = (0..NUM_THREADS).map(|thread_id| {
+        eprintln!("Thread: {} starts", thread_id+1);
+        let world_arc = world_arc.clone();
+        let image_mutex = image_mutex.clone();
+        let rx_mutex = Arc::clone(&rx_arc);
+        thread::spawn(move || {
+            loop{
+                let rx = rx_mutex.lock().unwrap();
+                let mut image_lock = image_mutex.lock().unwrap();
+                let world_lock = world_arc.lock().unwrap();
+                match rx.try_recv(){
+                    Ok((i, j)) => {
+                        let mut pixel_color = Vec3::color(0.0, 0.0, 0.0);
 
-fn random_scene() -> HittableList {
-    let mut world: HittableList = HittableList{..Default::default()};
-
-    let ground_material = MatPtr(Rc::new(Lambertian{albedo: color(0.5, 0.5, 0.5)}));
-    world.add(Rc::new(Sphere{
-        center: Vec3(0.0, -1000.0, 0.0),
-        radius: 1000.0,
-        mat_ptr: ground_material
-    }));
-    for a in -11..11{
-        for b in -11..11{
-            let choose_mat = random_double();
-            let center = Vec3(a as f64 + 0.9*random_double(), 0.2, b as f64 + 0.9 * random_double());
-
-            if (center - Vec3(4.0, 0.2, 0.0)).len() > 0.9 {
-                let sphere_mat;
-                 if choose_mat < 0.8{
-                    //diffuse
-                    let albedo = Vec3(random_double(), random_double(), random_double());
-                    sphere_mat = MatPtr(Rc::new(Lambertian{albedo}));
-                    world.add(Rc::new(Sphere{
-                        center,
-                        radius: 0.2, 
-                        mat_ptr: sphere_mat
-                    }))
-                 } else if choose_mat < 0.95{
-                    //metal
-                    let albedo = Vec3(random_double_range(0.5, 1.0), random_double_range(0.5, 1.0), random_double_range(0.5, 1.0));
-                    let fuzz = random_double_range(0.0, 0.5);
-                    sphere_mat = MatPtr(Rc::new(Metal{albedo, fuzz}));
-                    world.add(Rc::new(Sphere{
-                        center,
-                        radius: 0.2, 
-                        mat_ptr: sphere_mat
-                    }))
-                 } else{
-                    //glass
-                    sphere_mat = MatPtr(Rc::new(Dielectric{ir: 1.5}));
-                    world.add(Rc::new(Sphere{
-                        center,
-                        radius: 0.2,
-                        mat_ptr: sphere_mat
-                    }))
-                 }
+                        for _ in 0..samples_per_pixel {
+                            let u = (i as f64 + random_double()) / (image_width - 1) as f64;
+                            let v = (j as f64 + random_double()) / (image_height - 1) as f64;
+    
+                            let r = cam.get_ray(u, v);
+                            pixel_color += ray_color(r, &world_lock, max_depth);
+                        }
+    
+                        image_lock.set_pixel(i as u32, j as u32, pixel_color, samples_per_pixel);
+                    },
+                    Err(TryRecvError::Empty) => { break},
+                    Err(TryRecvError::Disconnected) => { break }
+                }
             }
+            eprintln!("Thread {} is finised", thread_id+1)
+        })
+    }).collect();
 
-            let mat1 = MatPtr(Rc::new(Dielectric{ir: 1.5}));
-            world.add(Rc::new(Sphere{
-                center: Vec3(0.0, 1.0, 0.0),
-                radius: 1.0,
-                mat_ptr: mat1
-            }));
-            let mat2 = MatPtr(Rc::new(Lambertian{albedo: color(0.4, 0.2, 0.1)}));
-            world.add(Rc::new(Sphere{
-                center: Vec3(-4.0, 1.0, 0.0),
-                radius: 1.0,
-                mat_ptr: mat2
-            }));
-            let mat3 = MatPtr(Rc::new(Metal{albedo: color(0.7, 0.6, 0.5), fuzz: 0.0}));
-            world.add(Rc::new(Sphere{
-                center: Vec3(4.0, 1.0, 0.0),
-                radius: 1.0,
-                mat_ptr: mat3
-            }));
-        }
-
+    for handle in handles {
+        handle.join().unwrap();
     }
 
-    world
-
+    eprintln!("Finito, Time Elapsed {}ms", start.elapsed().as_millis());
+    let image_lock = image_mutex.lock().unwrap();
+    image_lock.output();
 }
+
+

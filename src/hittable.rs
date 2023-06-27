@@ -1,18 +1,20 @@
+use crate::objects::Object;
 use super::vector::*;
 use super::ray::*;
 use std::fmt::Debug;
-use std::rc::Rc;
 use super::material::*;
 
 
-#[derive(Debug, Default)]
+
+
+#[derive(Debug, Default, Clone)]
 pub struct HittableList{
-    pub objects: Vec<Rc<dyn Hittable>>
+    pub objects: Vec<Object>
 }
 
 impl HittableList{
     pub fn clear(&mut self){ self.objects.clear() }
-    pub fn add(&mut self, object: Rc<dyn Hittable>){ self.objects.push(object) }
+    pub fn add(&mut self, object: Object){ self.objects.push(object) }
 }
 
 impl Hittable for HittableList{
@@ -32,23 +34,16 @@ impl Hittable for HittableList{
 }
 
 
-#[derive(Debug, Default, Clone)]
-pub struct HitRecord{
+#[derive(Debug, Clone)]
+pub struct HitRecord<'material>{
     pub p: Point3,
     pub normal: Vec3,
-    pub mat_ptr: MatPtr,
+    pub material: &'material Material,
     pub t: f64,
     pub front_face: bool
 }
 
 
-impl HitRecord{
-    pub fn set_face_normal(&mut self, r: &Ray, outward_normal: Vec3){
-        self.front_face = dot(self.normal, r.direction()) < 0.0;
-        self.normal = if self.front_face { unit_vector(outward_normal) } else { - unit_vector(outward_normal) };
-    }
-
-}
 
 pub trait Hittable{
     fn hit(&self, r: &Ray, t_min: f64, t_max: f64)-> Option<HitRecord>;
@@ -60,18 +55,3 @@ impl Debug for dyn Hittable{
     }
 }
 
-
-#[derive(Clone)]
-pub struct MatPtr(pub Rc<dyn Material>);
-
-impl Default for MatPtr{
-    fn default() -> Self {
-        MatPtr(Rc::new(BlankMaterial{..Default::default()}))
-    }
-}
-
-impl Debug for MatPtr{
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "GHAHAHAHA I HATE THIS SHIT")
-    }
-}

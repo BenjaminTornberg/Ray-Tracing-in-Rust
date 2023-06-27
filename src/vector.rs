@@ -15,6 +15,8 @@ impl Vec3{
     pub fn g(&self) -> f64{ self.1 }
     pub fn b(&self) -> f64{ self. 2}
 
+    pub fn color(r: f64, g: f64, b: f64) -> Color{ Vec3(r, g, b) }
+
     pub fn len(&self) -> f64{
         self.sqrlen().sqrt()
     }
@@ -39,7 +41,7 @@ impl Vec3{
 impl std::ops::Neg for Vec3{
     type Output = Vec3;
     fn neg(self) -> Self::Output {
-        Self(-self.0, -self.1, -self.0)
+        Self(0.0-self.0, 0.0-self.1, 0.0-self.0)
     }
 }
 
@@ -110,11 +112,12 @@ impl std::ops::Div<f64> for Vec3{
 }
 
 pub fn dot(u: Vec3, v: Vec3) -> f64{
-    u.0*v.0 + u.1 * v.1 + u.2 * v.2
+    u.0*v.0 + u.1*v.1 + u.2*v.2
 }
 
 pub fn cross(u: Vec3, v:Vec3) -> Vec3{
     Vec3(u.1*v.2 - u.2*v.1, u.2*v.0 - u.0*v.2, u.0*v.1 - u.1*v.0)
+
 }
 
 pub fn unit_vector(v: Vec3)-> Vec3{
@@ -130,6 +133,13 @@ pub fn random_in_unit_sphere() -> Vec3{
     }
 }
 
+pub fn random_in_unit_disk() -> Vec3 {
+    loop {
+        let p = Vec3(random_double_range(-1.0, 1.0), random_double_range(-1.0, 1.0), 0.0);
+        if p.sqrlen() < 1.0 { return p }
+    }
+}
+
 pub fn random_unit_vector() -> Vec3 {
     unit_vector(random_in_unit_sphere())
 }
@@ -138,17 +148,19 @@ pub fn reflect(v: Vec3, n: Vec3)-> Vec3{
     v - 2.0*dot(v, n)*n
 }
 
-pub fn refract(uv: Vec3, n: Vec3, etai_over_etat: f64) -> Vec3{
-    let cos_theta = dot(-uv, n).min(1.0);
-    let r_out_perp =  etai_over_etat * (uv + n *cos_theta);
-    let r_out_parallel = n * -(1.0 - r_out_perp.sqrlen()).abs().sqrt();
+pub fn refract(uv: &Vec3, n: &Vec3, etai_over_etat: f64) -> Vec3{
+    let cos_theta = dot(-*uv, *n).min(1.0);
+    let r_out_perp =  etai_over_etat * (*uv + *n * cos_theta);
+    let r_out_parallel = *n * -(1.0 - r_out_perp.sqrlen()).abs().sqrt();
     r_out_perp + r_out_parallel
 }
+
+
 
 pub fn reflectance(cos: f64, ref_idx: f64) -> f64{
     let mut r0 = (1.0 - ref_idx) / (1.0 + ref_idx);
     r0 = r0 * r0;
-    r0 + (1.0 - r0) * (1.0 - cos).powf(5.0)
+    r0 + (1.0 - r0) * (1.0 - cos).powf(5.0) //- 6.0 * cos * (1.0-cos).powf(6.0)
 }
 
 pub fn write_point(p: Point3,){

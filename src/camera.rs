@@ -3,23 +3,13 @@ use crate::utils::deg_to_rad;
 use super::vector::*;
 use super::ray::*;
 
-#[derive(Debug, Default)]
+
+#[derive(Debug, Default, Clone, Copy)]
 pub struct Camera{
-    pub aspect_ratio: f64,
-    pub viewport_height: f64,
-    pub viewport_width: f64,
-    pub focal_length: f64,
-    
-    pub origin: Point3,
-    pub horizontal: Vec3,
-    pub vertical: Vec3,
-    pub lower_left_corner: Vec3,
-
-    pub vfov: f64,
-    pub look_from: Point3,
-    pub look_at: Point3,
-    pub vup: Point3
-
+    origin: Point3,
+    horizontal: Vec3,
+    vertical: Vec3,
+    lower_left_corner: Vec3,
 }
 impl Camera{
     pub fn new(
@@ -27,43 +17,49 @@ impl Camera{
         look_at: Point3,
         vup: Point3,
         vfov: f64,
-        aspect:f64
+        aspect:f64,
+        //focus_dist: f64,
+        //aperture: f64
     ) -> Camera{
         let theta = deg_to_rad(vfov);
         let h = (theta/2.0).tan();
         let viewport_height = 2.0 * h;
         let viewport_width = aspect * viewport_height;
 
-        let focal_length = 1.0;
+        //let focal_length = 1.0;
 
         let w = unit_vector(look_from-look_at);
         let u = unit_vector(cross(vup, w));
         let v = cross(w, u);
 
         let origin = look_from;
-        let horizontal = viewport_width*u;
-        let vertical = viewport_height*v;
-        let lower_left_corner =  origin - horizontal/2.0 - vertical/2.0 - w; 
+        let horizontal =  viewport_width*u; //* focus_dist
+        let vertical =  viewport_height*v; //* focus_dist
+        let lower_left_corner =  origin - horizontal/2.0 - vertical/2.0 - w;  // * focus_dist 
+
+        //let lens_radius = aperture / 2.0;
+
 
         Camera { 
-            aspect_ratio: aspect,
-             viewport_height,
-              viewport_width,
-               focal_length,
                 origin,
                  horizontal,
                   vertical,
                    lower_left_corner,
-                    vfov,
-                     look_from,
-                      look_at,
-                        vup }
+                    //u,
+                     //v,
+                      //w,
+                       //lens_radius
+                    }
 
 
         }
-    pub fn get_ray(&self, u: f64, v: f64) -> Ray{
-        Ray{ orig: self.origin,
-            dir: self.lower_left_corner + u*self.horizontal + v*self.vertical - self.origin }
+    pub fn get_ray(&self, s: f64, t: f64) -> Ray{
+        //let rd = self.lens_radius * random_in_unit_disk();
+        //let offset = self.u * rd.x() + self.v * rd.y();
+
+        Ray{ orig: self.origin , //+offset
+            dir: self.lower_left_corner + s*self.horizontal + t*self.vertical - self.origin} //-offset
     }
 }
+
 

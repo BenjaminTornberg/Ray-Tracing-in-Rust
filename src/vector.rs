@@ -148,20 +148,21 @@ pub fn reflect(v: Vec3, n: Vec3)-> Vec3{
     v - 2.0*dot(v, n)*n
 }
 
-pub fn refract(uv: &Vec3, n: &Vec3, etai_over_etat: f64) -> Vec3{
+
+
+pub fn refract(uv: &Vec3, n: &Vec3, etai_over_etat: f64) -> Vec3 {
     let cos_theta = dot(-*uv, *n).min(1.0);
-    let r_out_perp =  etai_over_etat * (*uv + *n * cos_theta);
-    let r_out_parallel = *n * -(1.0 - r_out_perp.sqrlen()).abs().sqrt();
+    let r_out_perp = (*uv + *n * cos_theta) * etai_over_etat;
+    let r_out_parallel = *n * (-1.0 * (1.0 - r_out_perp.sqrlen()).abs().sqrt());
     r_out_perp + r_out_parallel
 }
 
-
-
-pub fn reflectance(cos: f64, ref_idx: f64) -> f64{
+pub fn reflectance(cosine: f64, ref_idx: f64) -> f64 {
     let mut r0 = (1.0 - ref_idx) / (1.0 + ref_idx);
     r0 = r0 * r0;
-    r0 + (1.0 - r0) * (1.0 - cos).powf(5.0) //- 6.0 * cos * (1.0-cos).powf(6.0)
+    r0 + (1.0 - r0) * (1.0 - cosine).powi(5) //- 6.0 * cos * (1.0-cos).powf(6.0)
 }
+
 
 pub fn write_point(p: Point3,){
     println!("{} {} {}", p.x(), p.y(), p.z())

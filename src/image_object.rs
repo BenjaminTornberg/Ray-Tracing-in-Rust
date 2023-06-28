@@ -2,6 +2,25 @@ use image::{Rgb, RgbImage};
 use crate::utils::clamp;
 use crate::vector::Color;
 
+
+pub struct ImageParams{
+    pub aspect_ratio: f64,
+    pub image_width: u32,
+    pub image_height: u32,
+    pub samples_per_pixel: u32,
+    pub max_depth: u32,
+}
+impl ImageParams{
+    pub fn new(aspect_ratio: f64, image_width: u32, samples_per_pixel: u32, max_depth: u32) -> ImageParams{
+        ImageParams{
+            aspect_ratio,
+            image_width,
+            image_height: (image_width as f64 / aspect_ratio) as u32,
+            samples_per_pixel,
+            max_depth,
+        }
+    }
+}
 pub struct Image{
     width: u32,
     height: u32,

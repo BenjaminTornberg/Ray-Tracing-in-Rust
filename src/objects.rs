@@ -4,7 +4,7 @@ use crate::material::Dielectric;
 use super::vector::*;
 use super::hittable::*;
 use super::ray::*;
-use super::Material;
+use super::material::Material;
 
 #[derive(Debug, Clone)]
 pub enum Object{
@@ -28,6 +28,7 @@ pub struct Sphere{
 impl Sphere{
     pub fn new(center: Point3, radius: f64, material: Material) -> Sphere{ Self { center, radius, material}}
 }
+
 impl Hittable for Sphere{
     fn hit(&self, r: &Ray, t_min: f64, t_max: f64) -> Option<HitRecord>{
         let oc = r.origin() - self.center;

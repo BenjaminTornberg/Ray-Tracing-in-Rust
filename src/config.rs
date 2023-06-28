@@ -44,7 +44,7 @@ pub fn test_scene() -> HittableList{
     world.add(Object::Sphere(
         Sphere{
             center: Vec3(-1.0, 0.0, -1.0),
-            radius: -0.4,
+            radius: 0.4,
             material: material_left.clone()
     }));
 

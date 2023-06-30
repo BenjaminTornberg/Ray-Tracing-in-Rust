@@ -23,7 +23,6 @@ impl Hittable for HittableList{
         let mut closest_so_far = t_max;
        
         for object in self.objects.iter(){
-
             if let Some(hit) = object.hit(r, t_min, closest_so_far){
                 closest_so_far = hit.t;
                 hit_record = Some(hit);
@@ -47,11 +46,5 @@ pub struct HitRecord<'material>{
 
 pub trait Hittable{
     fn hit(&self, r: &Ray, t_min: f64, t_max: f64)-> Option<HitRecord>;
-}
-
-impl Debug for dyn Hittable{
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "DO NOT KNOW WHY THE FUCK I GOTTA WRITE THIS SHIT")
-    }
 }
 

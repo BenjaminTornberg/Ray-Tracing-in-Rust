@@ -39,16 +39,17 @@ unsafe impl Send for Lambertian{ }
 
 impl Scatterable for Lambertian {
     fn scatter(&self, _ray_in: &Ray, rec: &HitRecord) -> Option<(Color, Option<Ray>)> {
-        let mut scatter_direction = rec.normal + random_unit_vector();
+        let mut scatter_direction = rec.normal + random_in_unit_sphere();
 
         if scatter_direction.zero_near(){
             scatter_direction = rec.normal;
         }
-        //et albedo = color(ray_in)
+        let target = rec.p + scatter_direction;
+        let scattered = ray(rec.p, target - rec.p);
 
         Some((
             self.albedo,
-            Some(ray(rec.p, scatter_direction)),
+            Some(scattered),
         ))
     }
 }
@@ -59,7 +60,7 @@ pub struct Metal{
 }
 impl Scatterable for Metal{
     fn scatter(&self, ray_in: &Ray, rec: &HitRecord) -> Option<(Color, Option<Ray>)> {
-        let reflected = reflect(unit_vector(ray_in.direction()), rec.normal);
+        let reflected = reflect(ray_in.direction(), rec.normal);
         
         let scattered = ray(rec.p, reflected + self.fuzz*random_in_unit_sphere());
 
@@ -75,11 +76,10 @@ impl Scatterable for Metal{
 pub struct Dielectric{
     pub ir: f64
 }
-//there is a seam in which it reflects vs refracts, this seam is vericle insteak of circular
+//the rays are getting reflected less than 180 instead of greater than cause the reflection to show what;s behind the sphere instead of infront
 impl Scatterable for Dielectric{
     fn scatter(&self, ray_in: &Ray, rec: &HitRecord) -> Option<(Color, Option<Ray>)> {
         let mut rng = rand::thread_rng();
-        let normal = unit_vector(rec.normal);
         let refraction_ratio = if rec.front_face { 1.0/self.ir } else { self.ir };
 
         let unit_direction = unit_vector(ray_in.direction());
@@ -87,12 +87,12 @@ impl Scatterable for Dielectric{
         let sin_theta = (1.0 - cos_theta * cos_theta).sqrt();
         let cannot_refract = refraction_ratio * sin_theta > 1.0;
         if cannot_refract || reflectance(cos_theta, refraction_ratio) > rng.gen::<f64>(){
-            let reflected = reflect(ray_in.direction(), normal);
+            let reflected = reflect(ray_in.direction(), rec.normal);
             let scattered = ray(rec.p, reflected);
             Some((Vec3(1.0, 1.0, 1.0), Some(scattered)))
         }
         else{
-            let direction = refract(&unit_direction, &normal, refraction_ratio);
+            let direction = refract(&unit_direction, &rec.normal, refraction_ratio);
             
 
             let scattered = ray(rec.p, direction);

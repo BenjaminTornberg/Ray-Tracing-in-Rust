@@ -14,8 +14,8 @@ pub fn test_scene() -> HittableList{
     let material_ground = Material::Lambertian(Lambertian{albedo: Vec3::color( 0.8, 0.8, 0.0)});
     let material_center =  Material::Lambertian(Lambertian{albedo: Vec3::color( 0.2, 0.3, 0.6)});
     //let material_center =  MatPtr(Rc::new(Dielectric{ir: 1.5}));
-    let material_left = Material::Dielectric(Dielectric{ir: 1.5});
-    let material_right = Material::Metal(Metal{albedo: Vec3::color(0.8, 0.6, 0.2), fuzz: 0.0});
+    let material_left = Material::Metal(Metal{albedo: Vec3::color(0.8, 0.6, 0.2), fuzz: 0.0});
+    let material_right = Material::Dielectric(Dielectric{ir: 1.5});
 
     world.add(Object::Sphere(
         Sphere{
@@ -33,19 +33,19 @@ pub fn test_scene() -> HittableList{
         Sphere{
             center: Vec3(1.0, 0.0, -1.0),
             radius: 0.5,
-            material: material_right
+            material: material_right.clone()
     }));
     world.add(Object::Sphere(
         Sphere{
             center: Vec3(-1.0, 0.0, -1.0),
             radius: 0.5,
-            material: material_left.clone()
+            material: material_left
     }));
     world.add(Object::Sphere(
         Sphere{
-            center: Vec3(-1.0, 0.0, -1.0),
-            radius: 0.4,
-            material: material_left.clone()
+            center: Vec3(1.0, 0.0, -1.0),
+            radius: -0.4,
+            material: material_right.clone()
     }));
 
     world

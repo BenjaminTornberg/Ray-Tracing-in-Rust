@@ -31,11 +31,10 @@ impl Sphere{
 
 impl Hittable for Sphere{
     fn hit(&self, r: &Ray, t_min: f64, t_max: f64) -> Option<HitRecord>{
-        let oc = r.origin() - self.center;
+        let oc = r.orig - self.center;
         let a = r.direction().sqrlen();
-        let half_b = dot(oc, r.direction());
+        let half_b = dot(oc, r.dir);
         let c = oc.sqrlen() - self.radius*self.radius;
-
         let discriminant = (half_b * half_b) - (a * c);
 
 
@@ -56,16 +55,16 @@ impl Hittable for Sphere{
             let front_face = dot(r.direction(), outward_normal) < 0.0;
             let normal = if front_face {
                 outward_normal
-            } else {
+            } else { 
                 -outward_normal
             };
 
             return Some(HitRecord {
-                t: root,
-                normal,
-                front_face,
                 p,
-                material: &self.material
+                normal,
+                material: &self.material,
+                t: root,
+                front_face
             });
         }
         None
@@ -94,6 +93,7 @@ fn test_sphere_outside_hit() {
     let hit = sphere.hit(&ray, 0.0, f64::INFINITY).unwrap();
     let expected_normal = Vec3(0.0, 0.0, -1.0);
     let expected_point = Vec3(0.0, 0.0, -1.0);
+    eprintln!("{:?} {:?}", hit.normal, -hit.normal);
     assert_eq!(hit.normal, expected_normal);
     assert_eq!(hit.p, expected_point);
 }

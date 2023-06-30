@@ -9,16 +9,16 @@ pub type Color = Vec3;
 impl Vec3{
     pub fn x(&self) -> f64{ self.0 }
     pub fn y(&self) -> f64{ self.1 }
-    pub fn z(&self) -> f64{ self. 2}
+    pub fn z(&self) -> f64{ self.2 }
 
     pub fn r(&self) -> f64{ self.0 }
     pub fn g(&self) -> f64{ self.1 }
-    pub fn b(&self) -> f64{ self. 2}
+    pub fn b(&self) -> f64{ self.2 }
 
     pub fn color(r: f64, g: f64, b: f64) -> Color{ Vec3(r, g, b) }
 
     pub fn len(&self) -> f64{
-        self.sqrlen().sqrt()
+        (self.0*self.0 + self.1*self.1 + self.2*self.2).sqrt()
     }
 
     pub fn sqrlen(&self) -> f64{
@@ -32,16 +32,14 @@ impl Vec3{
     }
 
     pub fn zero_near(&self) -> bool{
-        let s = 1e-8;
-        (self.0.abs() < s) && (self.1.abs() < s) && (self.2.abs() < s) 
+        self.0.abs() < f64::EPSILON && self.1.abs() < f64::EPSILON && self.2.abs() < f64::EPSILON
     } 
-
 }
 
 impl std::ops::Neg for Vec3{
     type Output = Vec3;
     fn neg(self) -> Self::Output {
-        Self(0.0-self.0, 0.0-self.1, 0.0-self.0)
+        Self(-self.0, -self.1, -self.2)
     }
 }
 
@@ -122,7 +120,7 @@ pub fn cross(u: Vec3, v:Vec3) -> Vec3{
 
 pub fn unit_vector(v: Vec3)-> Vec3{
     let l = v.len();
-    v / l
+    Vec3(v.0/l, v.1/l, v.2/l)
 }
 
 pub fn random_in_unit_sphere() -> Vec3{
@@ -145,10 +143,8 @@ pub fn random_unit_vector() -> Vec3 {
 }
 
 pub fn reflect(v: Vec3, n: Vec3)-> Vec3{
-    v - 2.0*dot(v, n)*n
+    v - n * (2.0*dot(v, n))
 }
-
-
 
 pub fn refract(uv: &Vec3, n: &Vec3, etai_over_etat: f64) -> Vec3 {
     let cos_theta = dot(-*uv, *n).min(1.0);
@@ -160,7 +156,7 @@ pub fn refract(uv: &Vec3, n: &Vec3, etai_over_etat: f64) -> Vec3 {
 pub fn reflectance(cosine: f64, ref_idx: f64) -> f64 {
     let mut r0 = (1.0 - ref_idx) / (1.0 + ref_idx);
     r0 = r0 * r0;
-    r0 + (1.0 - r0) * (1.0 - cosine).powi(5) //- 6.0 * cos * (1.0-cos).powf(6.0)
+    r0 + (1.0 - r0) * (1.0 - cosine).powi(5) //- 6.0 * cosine * (1.0-cosine).powf(6.0)
 }
 
 

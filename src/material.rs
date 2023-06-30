@@ -76,7 +76,7 @@ impl Scatterable for Metal{
 pub struct Dielectric{
     pub ir: f64
 }
-//the rays are getting reflected less than 180 instead of greater than cause the reflection to show what;s behind the sphere instead of infront
+
 impl Scatterable for Dielectric{
     fn scatter(&self, ray_in: &Ray, rec: &HitRecord) -> Option<(Color, Option<Ray>)> {
         let mut rng = rand::thread_rng();

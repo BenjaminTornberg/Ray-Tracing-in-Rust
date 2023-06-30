@@ -31,7 +31,7 @@ fn main() {
 
     //image
     let aspect_ratio = 3.0 / 2.0;
-    let image_width = 1200;
+    let image_width = 800;
     let samples_per_pixel = 200;
     let max_depth = 50;
 

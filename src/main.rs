@@ -22,7 +22,10 @@ pub mod material;
 pub mod config;
 pub mod raytracer;
 
+
+//TODO: create tests
 //TODO: make the project more Rust-like
+//TODO: fix Dielectric Material (impossible)
 
 fn main() {
 
@@ -37,16 +40,15 @@ fn main() {
 
     
     //world
-    let world = random_scene();
+    //let world = random_scene();
     
-    //let world = config::test_scene();
+    let world = config::test_scene();
      
-
     let look_from = Vec3(13.0, 2.0, 3.0);
     let look_at = Vec3(0.0, 0.0, 0.0);
     let vup = Vec3(0.0, 1.0, 0.0);
     let vfov = 20.0;
-    let dist_to_focus = 10.0;
+    let dist_to_focus = 10.0; //(look_from - look_at).len();
     let aperture = 0.1;
 
     let cam = Camera::new(look_from, look_at, vup, vfov, aspect_ratio, dist_to_focus, aperture);

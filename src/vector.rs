@@ -159,7 +159,3 @@ pub fn reflectance(cosine: f64, ref_idx: f64) -> f64 {
     r0 + (1.0 - r0) * (1.0 - cosine).powi(5) //- 6.0 * cosine * (1.0-cosine).powf(6.0)
 }
 
-
-pub fn write_point(p: Point3,){
-    println!("{} {} {}", p.x(), p.y(), p.z())
-}

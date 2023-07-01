@@ -1,4 +1,5 @@
 use crate::utils::deg_to_rad;
+use crate::utils::random_double_range;
 
 use super::vector::*;
 use super::ray::*;
@@ -14,6 +15,8 @@ pub struct Camera{
     v: Vec3,
     w: Vec3,
     lens_radius: f64,
+    time0: f64,
+    time1: f64,
 }
 impl Camera{
     pub fn new(
@@ -23,14 +26,14 @@ impl Camera{
         vfov: f64,
         aspect:f64,
         focus_dist: f64,
-        aperture: f64
+        aperture: f64,
+        time0: f64,
+        time1: f64,
     ) -> Camera{
         let theta = deg_to_rad(vfov);
         let h = (theta/2.0).tan();
         let viewport_height = 2.0 * h;
         let viewport_width = aspect * viewport_height;
-
-        //let focal_length = 1.0;
 
         let w = unit_vector(look_from-look_at);
         let u = unit_vector(cross(vup, w));
@@ -52,7 +55,9 @@ impl Camera{
                     u,
                      v,
                       w,
-                       lens_radius
+                       lens_radius,
+                       time0,
+                       time1
                     }
 
 
@@ -61,8 +66,12 @@ impl Camera{
         let rd = self.lens_radius * random_in_unit_disk();
         let offset = self.u * rd.x() + self.v * rd.y();
 
-        Ray{ orig: self.origin +offset, 
-            dir: self.lower_left_corner + s*self.horizontal + t*self.vertical - self.origin - offset}
+        Ray::new( self.origin +offset, 
+            self.lower_left_corner + s*self.horizontal + t*self.vertical - self.origin - offset,
+            random_double_range(self.time0, self.time1)
+        
+        )
+
     }
 }
 

@@ -7,7 +7,7 @@ use std::fmt::Debug;
 
 
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub enum Material {
     BlankMaterial(BlankMaterial),
     Lambertian(Lambertian),
@@ -35,17 +35,20 @@ pub trait Scatterable{
 pub struct Lambertian{
     pub albedo: Color
 }
-unsafe impl Send for Lambertian{ }
+
+impl Lambertian{
+    pub fn new(albedo: Color ) -> Lambertian {Lambertian { albedo }}
+}
 
 impl Scatterable for Lambertian {
-    fn scatter(&self, _ray_in: &Ray, rec: &HitRecord) -> Option<(Color, Option<Ray>)> {
+    fn scatter(&self, ray_in: &Ray, rec: &HitRecord) -> Option<(Color, Option<Ray>)> {
         let mut scatter_direction = rec.normal + random_in_unit_sphere();
 
         if scatter_direction.zero_near(){
             scatter_direction = rec.normal;
         }
         let target = rec.p + scatter_direction;
-        let scattered = ray(rec.p, target - rec.p);
+        let scattered = Ray::new(rec.p, target - rec.p, ray_in.time);
 
         Some((
             self.albedo,
@@ -58,11 +61,14 @@ pub struct Metal{
     pub albedo: Color,
     pub fuzz: f64
 }
+impl Metal{
+    pub fn new(albedo: Color, fuzz: f64) -> Metal {Metal { albedo, fuzz }}
+}
 impl Scatterable for Metal{
     fn scatter(&self, ray_in: &Ray, rec: &HitRecord) -> Option<(Color, Option<Ray>)> {
         let reflected = reflect(ray_in.direction(), rec.normal);
         
-        let scattered = ray(rec.p, reflected + self.fuzz*random_in_unit_sphere());
+        let scattered = Ray::new(rec.p, reflected + self.fuzz*random_in_unit_sphere(), ray_in.time);
 
         if dot(scattered.direction(), rec.normal) > 0.0 {
             return Some((self.albedo, Some(scattered)));
@@ -76,6 +82,9 @@ impl Scatterable for Metal{
 pub struct Dielectric{
     pub ir: f64
 }
+impl Dielectric{
+    pub fn new(ir: f64) -> Dielectric {Dielectric { ir }}
+}
 
 impl Scatterable for Dielectric{
     fn scatter(&self, ray_in: &Ray, rec: &HitRecord) -> Option<(Color, Option<Ray>)> {
@@ -88,14 +97,14 @@ impl Scatterable for Dielectric{
         let cannot_refract = refraction_ratio * sin_theta > 1.0;
         if cannot_refract || reflectance(cos_theta, refraction_ratio) > rng.gen::<f64>(){
             let reflected = reflect(ray_in.direction(), rec.normal);
-            let scattered = ray(rec.p, reflected);
+            let scattered = Ray::new(rec.p, reflected, ray_in.time);
             Some((Vec3(1.0, 1.0, 1.0), Some(scattered)))
         }
         else{
             let direction = refract(&unit_direction, &rec.normal, refraction_ratio);
             
 
-            let scattered = ray(rec.p, direction);
+            let scattered = Ray::new(rec.p, direction, ray_in.time);
             Some((Vec3(1.0, 1.0, 1.0), Some(scattered)))
         }
     }
@@ -119,9 +128,7 @@ fn test_reflectance() {
     assert_eq!(actual, expected);
 }
 #[derive(Debug, Default, Clone, Copy)]
-pub struct BlankMaterial{
-    pub albedo: Color
-}
+pub struct BlankMaterial(pub f64);
 impl Scatterable for BlankMaterial{
     fn scatter(&self, _ray_in: &Ray, _rec: &HitRecord) -> Option<(Color, Option<Ray>)> {
     eprintln!("ERROR: BlankMaterial");

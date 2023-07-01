@@ -17,6 +17,7 @@ const NUM_THREADS: usize = 4;
 
 pub fn render(cam: Camera, world: Arc<HittableList>, image: Arc<Mutex<Image>>, params: ImageParams){
     let start = Instant::now();
+    
     // Create a work queue using a channel
     let (tx, rx) = channel::<(u32, u32)>();
 
@@ -26,6 +27,8 @@ pub fn render(cam: Camera, world: Arc<HittableList>, image: Arc<Mutex<Image>>, p
             tx.send((i, j)).unwrap();
         }
     }
+
+
 
     let pb = Arc::new(Mutex::new(ProgressBar::new(((params.image_height-1) * (params.image_width - 1)) as u64)));
     

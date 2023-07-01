@@ -1,20 +1,23 @@
+use crate::aabb::Aabb;
+use crate::bvh::Hittables;
 use crate::objects::Object;
 use super::vector::*;
 use super::ray::*;
 use std::fmt::Debug;
 use super::material::*;
-
-
-
+use std::sync::Arc;
 
 #[derive(Debug, Default, Clone)]
 pub struct HittableList{
-    pub objects: Vec<Object>
+    pub objects: Vec<Arc<Hittables>>
 }
 
 impl HittableList{
     pub fn clear(&mut self){ self.objects.clear() }
-    pub fn add(&mut self, object: Object){ self.objects.push(object) }
+    pub fn add(&mut self, hittable: Hittables){ self.objects.push(Arc::new(hittable)) }
+    pub fn add_obj(&mut self, object: Object) { self.objects.push(Arc::new(Hittables::Object(object)))}
+
+    pub fn new(objects: Vec<Arc<Hittables>>) -> HittableList { HittableList { objects }}
 }
 
 impl Hittable for HittableList{
@@ -30,10 +33,24 @@ impl Hittable for HittableList{
         }
         hit_record
     }
+
+    fn bounding_box(&self, time0: f64, time1: f64) -> Option<Aabb> {
+        if self.objects.is_empty(){ return None }
+
+        let mut overall_box = self.objects[0].bounding_box(time0, time1).unwrap();
+
+        for object in &self.objects[1..] {
+            if let Some(object_box) = object.bounding_box(time0, time1) {
+                overall_box = Aabb::surrounding_box(&overall_box, &object_box);
+            }
+        }
+        return Some(overall_box);
+
+    }
 }
 
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub struct HitRecord<'material>{
     pub p: Point3,
     pub normal: Vec3,
@@ -45,6 +62,7 @@ pub struct HitRecord<'material>{
 
 
 pub trait Hittable{
-    fn hit(&self, r: &Ray, t_min: f64, t_max: f64)-> Option<HitRecord>;
+    fn hit(&self, r: &Ray, t_min: f64, t_max: f64)->  Option<HitRecord>;
+    fn bounding_box(&self, time0: f64, time1: f64) -> Option<Aabb>;
 }
 

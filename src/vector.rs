@@ -7,6 +7,8 @@ pub type Point3 = Vec3;
 pub type Color = Vec3;
 
 impl Vec3{
+    pub fn to_array(&self) -> [f64;3] { [self.0, self.1, self.2] }
+    
     pub fn x(&self) -> f64{ self.0 }
     pub fn y(&self) -> f64{ self.1 }
     pub fn z(&self) -> f64{ self.2 }
@@ -34,6 +36,7 @@ impl Vec3{
     pub fn zero_near(&self) -> bool{
         self.0.abs() < f64::EPSILON && self.1.abs() < f64::EPSILON && self.2.abs() < f64::EPSILON
     } 
+
 }
 
 impl std::ops::Neg for Vec3{

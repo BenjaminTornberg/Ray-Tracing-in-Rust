@@ -12,12 +12,15 @@ use crate::ray::Ray;
 use crate::utils::{random_double, clamp};
 use crate::vector::{Vec3, Color, unit_vector};
 
+use rayon::prelude::*;
+
 // Define the number of threads
 const NUM_THREADS: usize = 4;
 
+//TODO: Improve the threading
 pub fn render(cam: Camera, world: Arc<HittableList>, image: Arc<Mutex<Image>>, params: ImageParams){
     let start = Instant::now();
-    
+
     // Create a work queue using a channel
     let (tx, rx) = channel::<(u32, u32)>();
 
@@ -28,7 +31,8 @@ pub fn render(cam: Camera, world: Arc<HittableList>, image: Arc<Mutex<Image>>, p
         }
     }
 
-
+    //TODO: use rayon to optimize threading
+    //TODO: instead of splitting by pixel, split by band 
 
     let pb = Arc::new(Mutex::new(ProgressBar::new(((params.image_height-1) * (params.image_width - 1)) as u64)));
     
@@ -74,6 +78,7 @@ pub fn render(cam: Camera, world: Arc<HittableList>, image: Arc<Mutex<Image>>, p
     let image_lock = image.lock().unwrap();
     image_lock.output();
 }
+
 
 fn ray_color(r: Ray,  world: &HittableList, depth: u32) -> Color{
     if depth <= 0{

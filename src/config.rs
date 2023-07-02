@@ -10,7 +10,7 @@ use crate::objects::{Object, Sphere, MovingSphere};
 
 
 pub fn test_scene() -> HittableList{
-    let mut world: HittableList = HittableList{..Default::default()};
+    let mut world: HittableList = HittableList::default();
 
     let material_ground = Material::Lambertian(Lambertian{albedo: Vec3::color( 0.8, 0.8, 0.0)});
     let material_center =  Material::Lambertian(Lambertian{albedo: Vec3::color( 0.2, 0.3, 0.6)});
@@ -52,7 +52,7 @@ pub fn test_scene() -> HittableList{
             material: material_left
     })); 
 
-    let mut bworld: HittableList = HittableList{..Default::default()};
+    let mut bworld: HittableList = HittableList::default();
     let bvhs = BvhNode::new( world, 0.0, 1.0);
     let boundary_nodes = Hittables::BvhNode(bvhs);
     bworld.add(boundary_nodes);
@@ -69,7 +69,7 @@ pub fn test_scene() -> HittableList{
 }
 
 pub fn random_scene() -> HittableList {
-    let mut world: HittableList = HittableList{..Default::default()};
+    let mut world: HittableList = HittableList::default();
 
     let ground_material = Material::Lambertian(Lambertian::new(Vec3::color(0.5, 0.5, 0.5)));
     world.add_obj(Object::Sphere(Sphere::new(
@@ -139,7 +139,7 @@ pub fn random_scene() -> HittableList {
         }
 
     }
-    let mut scene = HittableList{..Default::default()};
+    let mut scene = HittableList::default();
     let bvh_scene = BvhNode::new(world, 0.0, 1.0);
     scene.add(Hittables::BvhNode(bvh_scene));
     scene

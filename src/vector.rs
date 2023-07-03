@@ -8,7 +8,7 @@ pub type Color = Vec3;
 
 impl Vec3{
     pub fn to_array(&self) -> [f64;3] { [self.0, self.1, self.2] }
-    
+
     pub fn x(&self) -> f64{ self.0 }
     pub fn y(&self) -> f64{ self.1 }
     pub fn z(&self) -> f64{ self.2 }
@@ -59,6 +59,13 @@ impl std::ops::MulAssign<Vec3> for Vec3{
         self.0 *= rhs.0;
         self.1 *= rhs.1;
         self.2 *= rhs.2;
+    }
+}
+impl std::ops::MulAssign<f64> for Vec3{
+    fn mul_assign(&mut self, rhs: f64) {
+        self.0 *= rhs;
+        self.1 *= rhs;
+        self.2 *= rhs;
     }
 }
 

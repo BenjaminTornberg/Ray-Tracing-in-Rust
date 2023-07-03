@@ -1,5 +1,9 @@
 use rand::Rng;
 
+use crate::texture::SolidColor;
+use crate::texture::Tex;
+use crate::texture::Texture;
+
 use super::vector::*;
 use super::hittable::*;
 use super::ray::*;
@@ -7,21 +11,32 @@ use std::fmt::Debug;
 
 
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 pub enum Material {
     BlankMaterial(BlankMaterial),
     Lambertian(Lambertian),
     Metal(Metal),
     Dielectric(Dielectric),
+    DiffuseLight(DiffuseLight),
 } 
 
 impl Scatterable for Material{
         fn scatter(&self, ray_in: &Ray, rec: &HitRecord) -> Option<(Color, Option<Ray>)> {
-            match *self{
+            match self{
                 Material::BlankMaterial(_) => None,
                 Material::Lambertian(b) => b.scatter(ray_in, rec),
                 Material::Metal(c) => c.scatter(ray_in, rec),
                 Material::Dielectric(d) => d.scatter(ray_in, rec),
+                Material::DiffuseLight(e) => e.scatter(ray_in, rec),
+            }
+        }
+        fn emmited(&self, u: f64, v: f64, p: &Point3) -> Color {
+            match self{
+                Material::BlankMaterial(a) => a.emmited(u, v, p),
+                Material::Lambertian(b) => b.emmited(u, v, p),
+                Material::Metal(c) => c.emmited(u, v, p),
+                Material::Dielectric(d) => d.emmited(u, v, p),
+                Material::DiffuseLight(e) => e.emmited(u, v, p),
             }
         }
 }
@@ -29,15 +44,17 @@ impl Scatterable for Material{
 
 pub trait Scatterable{
     fn scatter(&self, ray_in: &Ray, rec: &HitRecord) -> Option<(Color, Option<Ray>)>;
+    fn emmited(&self, _u: f64, _v: f64, _p: &Point3) -> Color { Vec3::color(0.0, 0.0, 0.0) }
 }
 
-#[derive(Debug, Default, Clone, Copy)]
+#[derive(Debug, Clone)]
 pub struct Lambertian{
-    pub albedo: Color
+    pub albedo: Texture
 }
 
 impl Lambertian{
-    pub fn new(albedo: Color ) -> Lambertian {Lambertian { albedo }}
+    pub fn new(tex: Texture) -> Lambertian {Lambertian { albedo: tex }}
+    pub fn new_rgb(a: Color ) -> Lambertian {Lambertian { albedo: Texture::SolidColor(SolidColor::new(a.r(), a.g(), a.b()))}}
 }
 
 impl Scatterable for Lambertian {
@@ -50,8 +67,10 @@ impl Scatterable for Lambertian {
         let target = rec.p + scatter_direction;
         let scattered = Ray::new(rec.p, target - rec.p, ray_in.time);
 
+        let albedo = self.albedo.value(rec.u, rec.v, &rec.p);
+
         Some((
-            self.albedo,
+            albedo,
             Some(scattered),
         ))
     }
@@ -109,6 +128,26 @@ impl Scatterable for Dielectric{
         }
     }
 }
+
+#[derive(Debug, Clone)]
+pub struct DiffuseLight{
+    pub emit: Texture
+}
+impl DiffuseLight{
+    pub fn new(texture: Texture) -> DiffuseLight { DiffuseLight { emit: texture }}
+    pub fn new_color(color: Color) -> DiffuseLight { 
+        DiffuseLight { emit: Texture::SolidColor(SolidColor::new(color.r(), color.g(), color.b()))}
+    }
+}
+impl Scatterable for DiffuseLight{
+    fn scatter(&self, _ray_in: &Ray, _rec: &HitRecord) -> Option<(Color, Option<Ray>)> {
+        None
+    }
+    fn emmited(&self, u: f64, v: f64, p: &Point3) -> Color {
+        self.emit.value(u, v, p)
+    }
+}
+
 
 #[test]
 fn test_refract() {

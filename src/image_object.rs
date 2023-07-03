@@ -9,22 +9,24 @@ pub struct ImageParams{
     pub image_height: u32,
     pub samples_per_pixel: u32,
     pub max_depth: u32,
+    pub background: Color,
 }
 impl ImageParams{
-    pub fn new(aspect_ratio: f64, image_width: u32, samples_per_pixel: u32, max_depth: u32) -> ImageParams{
+    pub fn new(aspect_ratio: f64, image_width: u32, samples_per_pixel: u32, max_depth: u32, background: Color) -> ImageParams{
         ImageParams{
             aspect_ratio,
             image_width,
             image_height: (image_width as f64 / aspect_ratio) as u32,
             samples_per_pixel,
             max_depth,
+            background
         }
     }
 }
 pub struct Image{
     width: u32,
     height: u32,
-    pixels: RgbImage
+    pixels: RgbImage,
 }
 
 impl Image{
@@ -33,6 +35,7 @@ impl Image{
             width,
             height,
             pixels: RgbImage::new(width, height),
+
         }
     }
 

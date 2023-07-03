@@ -1,9 +1,10 @@
 use crate::bvh::{BvhNode, Hittables};
-use crate::hittable::HittableList;
+use crate::hittable::{HittableList};
 use crate::material::*;
+use crate::texture::{Texture, CheckeredTexture, NoiseTexture, ImageTexture, SolidColor};
 use crate::utils::{random_double_range, random_double};
 use crate::vector::Vec3;
-use crate::objects::{Object, Sphere, MovingSphere};
+use crate::objects::{Object, Sphere, MovingSphere, XyRect};
 
 //TODO: CREATE SETUP IN HERE
 
@@ -12,8 +13,10 @@ use crate::objects::{Object, Sphere, MovingSphere};
 pub fn test_scene() -> HittableList{
     let mut world: HittableList = HittableList::default();
 
-    let material_ground = Material::Lambertian(Lambertian{albedo: Vec3::color( 0.8, 0.8, 0.0)});
-    let material_center =  Material::Lambertian(Lambertian{albedo: Vec3::color( 0.2, 0.3, 0.6)});
+    let checkered = Texture::CheckeredTexture(CheckeredTexture::new_rgb(Vec3::color(0.2, 0.3, 0.1), Vec3::color(0.9, 0.9, 0.9)));
+
+    let material_ground = Material::Lambertian(Lambertian::new(checkered));
+    let material_center =  Material::Lambertian(Lambertian::new_rgb(Vec3::color( 0.2, 0.3, 0.6)));
     //let material_center =  MatPtr(Rc::new(Dielectric{ir: 1.5}));
     let material_left = Material::Metal(Metal{albedo: Vec3::color(0.8, 0.6, 0.2), fuzz: 0.0});
     let material_right = Material::Dielectric(Dielectric{ir: 1.5});
@@ -65,13 +68,15 @@ pub fn test_scene() -> HittableList{
     }));
     
     bworld
-    //world
 }
 
 pub fn random_scene() -> HittableList {
     let mut world: HittableList = HittableList::default();
 
-    let ground_material = Material::Lambertian(Lambertian::new(Vec3::color(0.5, 0.5, 0.5)));
+    //let checkered = Texture::CheckeredTexture(CheckeredTexture::new_rgb(Vec3::color(0.2, 0.3, 0.1), Vec3::color(0.9, 0.9, 0.9)));
+    let marble = Texture::NoiseTexture(NoiseTexture::new(4.0));
+    let ground_material = Material::Lambertian(Lambertian::new(marble));
+
     world.add_obj(Object::Sphere(Sphere::new(
         Vec3(0.0, -1000.0, 0.0),
         1000.0,
@@ -88,7 +93,7 @@ pub fn random_scene() -> HittableList {
                     //diffuse
                     let albedo = Vec3(random_double(), random_double(), random_double());
                     let center2 = center + Vec3(0.0, random_double_range(0.0, 0.5), 0.0);
-                    sphere_mat = Material::Lambertian(Lambertian::new(albedo));
+                    sphere_mat = Material::Lambertian(Lambertian::new_rgb(albedo));
                     world.add_obj(Object::MovingSphere(MovingSphere::new(
                         center,
                         center2,
@@ -124,7 +129,7 @@ pub fn random_scene() -> HittableList {
                 1.0,
                 mat1
             )));
-            let mat2 = Material::Lambertian(Lambertian{albedo: Vec3::color(0.4, 0.2, 0.1)});
+            let mat2 = Material::Lambertian(Lambertian::new_rgb(Vec3::color(0.4, 0.2, 0.1)));
             world.add_obj(Object::Sphere(Sphere::new(
                 Vec3(-4.0, 1.0, 0.0),
                 1.0,
@@ -137,10 +142,39 @@ pub fn random_scene() -> HittableList {
                 mat3
             )));
         }
-
     }
     let mut scene = HittableList::default();
     let bvh_scene = BvhNode::new(world, 0.0, 1.0);
     scene.add(Hittables::BvhNode(bvh_scene));
     scene
+}
+
+pub fn two_spheres() -> HittableList{
+    let mut world = HittableList::default();
+    //let checker = Texture::CheckeredTexture(CheckeredTexture::new_rgb(Vec3::color(0.2, 0.3, 0.1), Vec3::color(0.9, 0.9, 0.9)));
+    let pertext = Texture::NoiseTexture(NoiseTexture::new(4.0));
+    world.add_obj(Object::Sphere(Sphere::new(Vec3(0.0, -1000.0, 0.0), 1000.0, Material::Lambertian(Lambertian::new(pertext.clone())))));
+    world.add_obj(Object::Sphere(Sphere::new(Vec3(0.0, 2.0, 0.0), 2.0, Material::Lambertian(Lambertian::new(pertext.clone())))));
+    world
+}
+
+pub fn earth() -> HittableList{
+    let mut world = HittableList::default();
+    let earth_tex = Texture::ImageTexture(ImageTexture::new("src/textures/earthmap.jpeg"));
+    let earth_surface = Material::Lambertian(Lambertian::new(earth_tex));
+    world.add_obj(Object::Sphere(Sphere::new(Vec3(0.0, 0.0, 0.0), 2.0, earth_surface)));
+    world
+}
+pub fn simple_light() -> HittableList{
+    let mut world = HittableList::default();
+
+    let pertext = Texture::NoiseTexture(NoiseTexture::new(4.0));
+    world.add_obj(Object::Sphere(Sphere::new(Vec3(0.0, -1000.0, 0.0), 1000.0, Material::Lambertian(Lambertian::new(pertext.clone())))));
+    world.add_obj(Object::Sphere(Sphere::new(Vec3(0.0, 2.0, 0.0), 2.0, Material::Lambertian(Lambertian::new(pertext.clone())))));
+    
+    let difflight = Material::DiffuseLight(DiffuseLight::new(Texture::SolidColor(SolidColor::new(4.0, 4.0, 4.0))));
+    world.add_obj(Object::XyRect(XyRect::new(3.0, 5.0, 1.0, 3.0, -2.0, difflight.clone())));
+    let difflight_pink = Material::DiffuseLight(DiffuseLight::new(Texture::SolidColor(SolidColor::new(2.0, 0.8, 0.8))));
+    world.add_obj(Object::Sphere(Sphere::new(Vec3(0.0, 7.0, 0.0), 2.0, difflight_pink)));
+    world
 }

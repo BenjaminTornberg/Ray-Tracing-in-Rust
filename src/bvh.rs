@@ -98,9 +98,8 @@ impl Hittable for BvhNode{
         if !self.bounding_box.hit(r, t_min, t_max) {
             return None;
         }
-
+        
         let hit_left = self.left.as_ref().and_then(|obj| obj.hit(r, t_min, t_max));
-
     
         if let Some(left) = hit_left {
             let t_max = left.t;
@@ -108,5 +107,7 @@ impl Hittable for BvhNode{
             return hit_right.or(Some(left));
         }
         self.right.as_ref().and_then(|obj| obj.hit(r, t_min, t_max)) 
+
+
     }
 }

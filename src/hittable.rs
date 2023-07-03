@@ -56,6 +56,8 @@ pub struct HitRecord<'material>{
     pub normal: Vec3,
     pub material: &'material Material,
     pub t: f64,
+    pub u: f64,
+    pub v: f64,
     pub front_face: bool
 }
 

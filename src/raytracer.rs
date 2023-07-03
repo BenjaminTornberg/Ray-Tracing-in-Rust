@@ -9,10 +9,10 @@ use crate::hittable::{HittableList, Hittable};
 use crate::image_object::{Image, ImageParams};
 use crate::material::Scatterable;
 use crate::ray::Ray;
-use crate::utils::{random_double, clamp};
-use crate::vector::{Vec3, Color, unit_vector};
+use crate::utils::random_double;
+use crate::vector::{Vec3, Color};
 
-use rayon::prelude::*;
+//use rayon::prelude::*;
 
 // Define the number of threads
 const NUM_THREADS: usize = 4;
@@ -55,7 +55,7 @@ pub fn render(cam: Camera, world: Arc<HittableList>, image: Arc<Mutex<Image>>, p
                             let v = (j as f64 + random_double()) / (params.image_height - 1) as f64;
     
                             let r = cam.get_ray(u, v);
-                            pixel_color += ray_color(r, &world_arc, params.max_depth);
+                            pixel_color += ray_color(r, params.background, &world_arc, params.max_depth);
                         }
                         let mut image_lock = image_mutex.lock().unwrap();
                         image_lock.set_pixel(i as u32, j as u32, pixel_color, params.samples_per_pixel);
@@ -80,7 +80,7 @@ pub fn render(cam: Camera, world: Arc<HittableList>, image: Arc<Mutex<Image>>, p
 }
 
 
-fn ray_color(r: Ray,  world: &HittableList, depth: u32) -> Color{
+fn ray_color(r: Ray, background: Color, world: &HittableList, depth: u32) -> Color{
     if depth <= 0{
         return Vec3::color(0.0, 0.0, 0.0);
     }
@@ -89,31 +89,29 @@ fn ray_color(r: Ray,  world: &HittableList, depth: u32) -> Color{
     match hit {
         Some(hit_record) => {
             let scattered = hit_record.material.scatter(&r, &hit_record);
+            let emmited = hit_record.material.emmited(hit_record.u, hit_record.v, &hit_record.p);
             match scattered{
                 Some((albedo, scattered_ray)) => { 
-                    let rgb = Vec3::color(0.0, 0.0, 0.0);
                     match scattered_ray {
                         Some(sr) => {
-                            let target_color = ray_color(sr, world, depth-1);
+                            let target_color = ray_color(sr, background, world, depth-1);
 
                             Vec3::color(
-                                clamp(rgb.r() + albedo.r() * target_color.r(), 0.0, 1.0),
-                                clamp(rgb.g() + albedo.g() * target_color.g(), 0.0, 1.0),
-                                clamp(rgb.b() + albedo.b() * target_color.b(), 0.0, 1.0)
+                                emmited.r() + albedo.r() * target_color.r(),
+                                emmited.g() + albedo.g() * target_color.g(),
+                                emmited.b() + albedo.b() * target_color.b()
                             )
                         }
                         None => albedo
                     }
                 },
-                None => { return Vec3::color(0.0, 0.0, 0.0)}
+                None => emmited
 
             }
 
         },
         None => {
-            let unit_direction = unit_vector(r.direction());
-            let t = 0.5 * (unit_direction.y() + 1.0);
-            return (1.0-t)*Vec3::color(1.0, 1.0, 1.0) + t*Vec3::color(0.5, 0.7, 1.0);
+            return background;
         }
 
     }

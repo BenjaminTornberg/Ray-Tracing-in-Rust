@@ -10,6 +10,7 @@ use vector::Vec3;
 ** ray tracing in one weekend
 ** done completely in rust
 */
+
 pub mod vector;
 pub mod ray;
 pub mod hittable;
@@ -33,7 +34,7 @@ pub mod perlin;
 //Not so sure how i'm going to be able to render the scene unless i use asyn function, but at that poin it seems too complicated
 
 
-//TODO: add textures, volumes, boxes, triangles, lights
+//TODO: add volumes, boxes, triangles
 //TODO: add ability to render .obj files
 //TODO: write a scene editor
 //TODO: serialize the scene constructor
@@ -43,11 +44,10 @@ pub mod perlin;
 //IDEAS: write a scene editor capable of taking spheres, boxes, lights, or even obj files and move them, put textures on them and select materials
 
 fn main() {
-
     //image
-    let aspect_ratio = 16.0 / 9.0;
-    let image_width = 400;
-    let samples_per_pixel = 400;
+    let mut aspect_ratio = 16.0 / 9.0;
+    let mut image_width = 400;
+    let mut samples_per_pixel = 400;
     let max_depth = 50;
 
     
@@ -60,7 +60,7 @@ fn main() {
     let mut aperture = 0.0;
 
     //scene change
-    let scene_number = 4;
+    let scene_number = 6;
 
     let world = match scene_number {
         0 => {
@@ -107,7 +107,27 @@ fn main() {
             vfov = 20.0;
             dist_to_focus = 10.0; 
             Some(world)
-        }
+        },
+        5 => {
+            let world = cornell_box();
+            aspect_ratio = 1.0;
+            image_width = 600;
+            samples_per_pixel = 200;
+            look_from = Vec3(278.0, 278.0, -800.0);
+            look_at = Vec3(278.0, 278.0, 0.0);
+            vfov = 40.0;
+            Some(world)
+        },
+        6 => {
+            let world = cornell_ball();
+            aspect_ratio = 1.0;
+            image_width = 600;
+            samples_per_pixel = 600;
+            look_from = Vec3(278.0, 278.0, -800.0);
+            look_at = Vec3(278.0, 278.0, 0.0);
+            vfov = 40.0;
+            Some(world)
+        },
         _ => {
             eprintln!("Invalid scene selected");
             None 

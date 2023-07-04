@@ -4,12 +4,13 @@ use std::sync::{Arc, Mutex};
 use std::sync::mpsc::{channel, TryRecvError};
 use indicatif::ProgressBar;
 
+
 use crate::camera::Camera;
 use crate::hittable::{HittableList, Hittable};
 use crate::image_object::{Image, ImageParams};
 use crate::material::Scatterable;
 use crate::ray::Ray;
-use crate::utils::random_double;
+use crate::utils::{random_double};
 use crate::vector::{Vec3, Color};
 
 //use rayon::prelude::*;
@@ -76,6 +77,7 @@ pub fn render(cam: Camera, world: Arc<HittableList>, image: Arc<Mutex<Image>>, p
     pb.lock().unwrap().finish_with_message("Done");
     eprintln!("\nTime Elapsed {:.2}s", start.elapsed().as_millis() as f64/1000.0);
     let image_lock = image.lock().unwrap();
+    eprintln!("Outputting to file...");
     image_lock.output();
 }
 
@@ -88,27 +90,28 @@ fn ray_color(r: Ray, background: Color, world: &HittableList, depth: u32) -> Col
 
     match hit {
         Some(hit_record) => {
-            let scattered = hit_record.material.scatter(&r, &hit_record);
-            let emmited = hit_record.material.emmited(hit_record.u, hit_record.v, &hit_record.p);
-            match scattered{
-                Some((albedo, scattered_ray)) => { 
-                    match scattered_ray {
-                        Some(sr) => {
-                            let target_color = ray_color(sr, background, world, depth-1);
+            let emitted = hit_record.material.emmited(hit_record.u, hit_record.v, &hit_record.p);
+            let mut scattered_color = Vec3::color(0.0, 0.0, 0.0);
+            let mut attenuation = Vec3::color(0.0, 0.0, 0.0);
 
-                            Vec3::color(
-                                emmited.r() + albedo.r() * target_color.r(),
-                                emmited.g() + albedo.g() * target_color.g(),
-                                emmited.b() + albedo.b() * target_color.b()
-                            )
-                        }
-                        None => albedo
-                    }
-                },
-                None => emmited
+            let scatter = hit_record.material.scatter(&r, &hit_record);
+            match scatter {
+                Some((scattered_attenuation, scattered_ray)) => {
+                    attenuation = scattered_attenuation;
 
+                    if let Some(scattered_ray) = scattered_ray {
+                        scattered_color = ray_color(
+                            scattered_ray,
+                            background,
+                            world,
+                            depth - 1
+                        );
+                    } 
+                }
+                None => {}
             }
 
+            emitted + (attenuation * scattered_color)
         },
         None => {
             return background;

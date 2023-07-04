@@ -4,7 +4,7 @@ use crate::material::*;
 use crate::texture::{Texture, CheckeredTexture, NoiseTexture, ImageTexture, SolidColor};
 use crate::utils::{random_double_range, random_double};
 use crate::vector::Vec3;
-use crate::objects::{Object, Sphere, MovingSphere, XyRect};
+use crate::objects::{Object, Sphere, MovingSphere, XyRect, XzRect, YzRect};
 
 //TODO: CREATE SETUP IN HERE
 
@@ -177,4 +177,46 @@ pub fn simple_light() -> HittableList{
     let difflight_pink = Material::DiffuseLight(DiffuseLight::new(Texture::SolidColor(SolidColor::new(2.0, 0.8, 0.8))));
     world.add_obj(Object::Sphere(Sphere::new(Vec3(0.0, 7.0, 0.0), 2.0, difflight_pink)));
     world
+}
+pub fn cornell_box() -> HittableList{
+    let mut world = HittableList::default();
+
+    let red = Material::Lambertian(Lambertian::new_rgb(Vec3::color(0.65, 0.05, 0.05)));
+    let white = Material::Lambertian(Lambertian::new_rgb(Vec3::color(0.73, 0.73, 0.73)));
+    let green = Material::Lambertian(Lambertian::new_rgb(Vec3::color(0.12, 0.45, 0.15)));
+    
+    world.add_obj(Object::YzRect(YzRect::new(0.0, 555.0, 0.0, 555.0, 555.0, green)));
+    world.add_obj(Object::YzRect(YzRect::new(0.0, 555.0, 0.0, 555.0, 0.0, red)));
+    world.add_obj(Object::XzRect(XzRect::new(0.0, 555.0, 0.0, 555.0, 0.0, white.clone())));
+    world.add_obj(Object::XzRect(XzRect::new(0.0, 555.0, 0.0, 555.0, 555.0, white.clone())));
+    world.add_obj(Object::XyRect(XyRect::new(0.0, 555.0, 0.0, 555.0, 555.0, white)));
+
+    let light = Material::DiffuseLight(DiffuseLight::new_color(Vec3::color(15.0, 15.0, 15.0)));
+    world.add_obj(Object::XzRect(XzRect::new(213.0, 343.0, 227.0, 332.0, 554.0, light.clone())));
+
+    world
+}
+
+pub fn cornell_ball() -> HittableList{
+    let mut world = HittableList::default();
+
+    let red = Material::Lambertian(Lambertian::new_rgb(Vec3::color(0.65, 0.05, 0.05)));
+    let white = Material::Lambertian(Lambertian::new_rgb(Vec3::color(0.73, 0.73, 0.73)));
+    let green = Material::Lambertian(Lambertian::new_rgb(Vec3::color(0.12, 0.45, 0.15)));
+    
+    world.add_obj(Object::YzRect(YzRect::new(0.0, 555.0, 0.0, 555.0, 555.0, green)));
+    world.add_obj(Object::YzRect(YzRect::new(0.0, 555.0, 0.0, 555.0, 0.0, red)));
+    world.add_obj(Object::XzRect(XzRect::new(0.0, 555.0, 0.0, 555.0, 0.0, white.clone())));
+    world.add_obj(Object::XzRect(XzRect::new(0.0, 555.0, 0.0, 555.0, 555.0, white.clone())));
+    world.add_obj(Object::XyRect(XyRect::new(0.0, 555.0, 0.0, 555.0, 555.0, white)));
+
+    let light = Material::DiffuseLight(DiffuseLight::new_color(Vec3::color(15.0, 15.0, 15.0)));
+    world.add_obj(Object::XzRect(XzRect::new(213.0, 343.0, 227.0, 332.0, 554.0, light.clone())));
+
+    let metal = Material::Metal(Metal::new(Vec3::color(0.73, 0.53, 0.63), 0.0));
+    world.add_obj(Object::Sphere(Sphere::new(Vec3(260.0, 200.0, 260.0), 200.0,metal)));
+
+    world
+
+
 }

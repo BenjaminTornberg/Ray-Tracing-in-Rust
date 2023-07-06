@@ -220,13 +220,15 @@ pub fn cornell_ball() -> HittableList{
     world.add_obj(Object::YzRect(YzRect::new(0.0, 555.0, 0.0, 555.0, 0.0, red)));
     world.add_obj(Object::XzRect(XzRect::new(0.0, 555.0, 0.0, 555.0, 0.0, white.clone())));
     world.add_obj(Object::XzRect(XzRect::new(0.0, 555.0, 0.0, 555.0, 555.0, white.clone())));
+
     world.add_obj(Object::XyRect(XyRect::new(0.0, 555.0, 0.0, 555.0, 555.0, white.clone())));
 
-    let light = Material::DiffuseLight(DiffuseLight::new_color(Vec3::color(15.0, 15.0, 15.0)));
-    world.add_obj(Object::XzRect(XzRect::new(213.0, 343.0, 227.0, 332.0, 554.0, light.clone())));
+    world.add_obj(Object::XyRect(XyRect::new_ss(0.0, 555.0, 0.0, 555.0, 0.0, white.clone(), Vec3(0.0, 0.0, 1.0))));
 
-    let marble = Texture::NoiseTexture(NoiseTexture::new(4.0));
-    let metal = Material::Metal(Metal::new(marble, 0.8));
+    let light = Material::DiffuseLight(DiffuseLight::new_color(Vec3::color(15.0, 15.0, 15.0)));
+    world.add_obj(Object::XzRect(XzRect::new(113.0, 443.0, 127.0, 432.0, 554.0, light.clone())));
+
+    let metal = Material::Metal(Metal::new_color(Vec3::color(0.73, 0.73, 0.73), 0.0));
     world.add_obj(Object::Sphere(Sphere::new(Vec3(277.5, 200.0, 277.5), 200.0,metal)));
 
     world

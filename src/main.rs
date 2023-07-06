@@ -35,6 +35,7 @@ pub mod perlin;
 
 //TODO: performance increases: use rayon for threading, minimize mutex and lock, cut down on cloning during the render(use Arc or Rc instead of copying material)
 
+//TODO: add RotateX, RotateZ and Scale in preperation for obj
 //TODO: add triangles
 //TODO: add ability to render .obj files
 //TODO: write a scene editor
@@ -61,7 +62,7 @@ fn main() {
     let mut aperture = 0.0;
 
     //scene change
-    let scene_number = 8;
+    let scene_number = 6;
 
     let world = match scene_number {
         0 => {
@@ -123,7 +124,7 @@ fn main() {
             let world = cornell_ball();
             aspect_ratio = 1.0;
             image_width = 600;
-            samples_per_pixel = 600;
+            samples_per_pixel = 200;
             look_from = Vec3(278.0, 278.0, -800.0);
             look_at = Vec3(278.0, 278.0, 0.0);
             vfov = 40.0;

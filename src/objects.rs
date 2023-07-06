@@ -1,6 +1,3 @@
-//#[cfg(test)]
-//use crate::material::Dielectric;
-
 use super::vector::*;
 use super::hittable::*;
 use super::ray::*;
@@ -204,10 +201,6 @@ impl Hittable for MovingSphere{
     }
 }
 
-//TODO: add ability to make them one sided
-//add option that allows for rays to pass through one side of the rect
-//one_sided: Option<f64> 
-//to determine if the ray passes through dot the normal with the ray and if it is the same sign as one sided return None
 #[derive(Debug, Clone)]
 pub struct XyRect {
     x0: f64,
@@ -216,9 +209,11 @@ pub struct XyRect {
     y1: f64,
     k: f64, 
     material: Material,
+    single_sided: Option<Vec3>, //TODO: turn single sided objects into an instance
 }
 impl XyRect{
-    pub fn new(x0: f64, x1: f64, y0: f64, y1: f64, k: f64, material: Material) -> XyRect{ XyRect { x0, x1, y0, y1, k, material}}
+    pub fn new(x0: f64, x1: f64, y0: f64, y1: f64, k: f64, material: Material) -> XyRect{ XyRect { x0, x1, y0, y1, k, material, single_sided: None}}
+    pub fn new_ss(x0: f64, x1: f64, y0: f64, y1: f64, k: f64, material: Material, pass_through_vector: Vec3) -> XyRect { XyRect { x0, x1, y0, y1, k, material, single_sided: Some(pass_through_vector) } }
 }
 impl Hittable for XyRect{
     fn bounding_box(&self, _time0: f64, _time1: f64) -> Option<Aabb> {
@@ -226,6 +221,11 @@ impl Hittable for XyRect{
         Some(out_box)
     }
     fn hit(&self, r: &Ray, t_min: f64, t_max: f64)->  Option<HitRecord> {
+        if let Some(ptv) = self.single_sided{
+            if dot(ptv, r.direction()) > 0.0{
+                return None;
+            }
+        }
         let t = (self.k - r.origin().z()) / r.direction().z();
         if t < t_min || t > t_max{
             return None;

@@ -33,11 +33,13 @@ pub mod perlin;
 //them from the vec calculate the color by storing the amoun of ray per pixel we have and render it to the screen
 //Not so sure how i'm going to be able to render the scene unless i use asyn function, but at that poin it seems too complicated
 
+//TODO: performance increases: use rayon for threading, minimize mutex and lock, cut down on cloning during the render(use Arc or Rc instead of copying material)
 
-//TODO: add volumes, boxes, triangles
+//TODO: add triangles
 //TODO: add ability to render .obj files
 //TODO: write a scene editor
 //TODO: serialize the scene constructor
+
 
 //IDEAS: Have a version of the ray tracer focused on speed and efficiency and have another that visualy shows the rendering 
 //IDEAS: create a file format that can store scene data and write a file converter that converst mtl files to my format
@@ -49,7 +51,6 @@ fn main() {
     let mut image_width = 400;
     let mut samples_per_pixel = 400;
     let max_depth = 50;
-
     
     let mut background = Vec3::color(0.0, 0.0, 0.0);
     let mut look_from = Vec3(0.0, 0.0, 0.0);
@@ -60,7 +61,7 @@ fn main() {
     let mut aperture = 0.0;
 
     //scene change
-    let scene_number = 6;
+    let scene_number = 8;
 
     let world = match scene_number {
         0 => {
@@ -128,6 +129,28 @@ fn main() {
             vfov = 40.0;
             Some(world)
         },
+        7 => {
+            let world = cornell_smoke();
+            aspect_ratio = 1.0;
+            image_width = 600;
+            samples_per_pixel = 200;
+            look_from = Vec3(278.0, 278.0, -800.0);
+            look_at = Vec3(278.0, 278.0, 0.0);
+            vfov = 40.0;
+            Some(world)
+
+        },
+        8 => { // 4.4 hours, res: 800x800, spp: 500
+            let world = final_scene();
+            aspect_ratio = 1.0;
+            image_width = 800;
+            samples_per_pixel = 500;
+            look_from = Vec3(478.0, 278.0, -600.0);
+            look_at = Vec3(278.0, 278.0, 0.0);
+            vfov = 40.0;
+            Some(world)
+
+        }
         _ => {
             eprintln!("Invalid scene selected");
             None 

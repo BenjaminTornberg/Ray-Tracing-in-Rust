@@ -18,6 +18,7 @@ pub enum Material {
     Metal(Metal),
     Dielectric(Dielectric),
     DiffuseLight(DiffuseLight),
+    Isotropic(Isotropic),
 } 
 
 impl Scatterable for Material{
@@ -28,6 +29,7 @@ impl Scatterable for Material{
                 Material::Metal(c) => c.scatter(ray_in, rec),
                 Material::Dielectric(d) => d.scatter(ray_in, rec),
                 Material::DiffuseLight(e) => e.scatter(ray_in, rec),
+                Material::Isotropic(f) => f.scatter(ray_in, rec),
             }
         }
         fn emmited(&self, u: f64, v: f64, p: &Point3) -> Color {
@@ -37,6 +39,7 @@ impl Scatterable for Material{
                 Material::Metal(c) => c.emmited(u, v, p),
                 Material::Dielectric(d) => d.emmited(u, v, p),
                 Material::DiffuseLight(e) => e.emmited(u, v, p),
+                Material::Isotropic(f) => f.emmited(u, v, p),
             }
         }
 }
@@ -75,13 +78,14 @@ impl Scatterable for Lambertian {
         ))
     }
 }
-#[derive(Debug, Default, Clone, Copy)]
+#[derive(Debug, Clone)]
 pub struct Metal{
-    pub albedo: Color,
+    pub albedo: Texture,
     pub fuzz: f64
 }
 impl Metal{
-    pub fn new(albedo: Color, fuzz: f64) -> Metal {Metal { albedo, fuzz }}
+    pub fn new(albedo: Texture, fuzz: f64) -> Metal {Metal { albedo, fuzz }}
+    pub fn new_color(albedo: Color, fuzz: f64) -> Metal {Metal { albedo: Texture::SolidColor(SolidColor::new(albedo.r(), albedo.g(), albedo.b())), fuzz }}
 }
 impl Scatterable for Metal{
     fn scatter(&self, ray_in: &Ray, rec: &HitRecord) -> Option<(Color, Option<Ray>)> {
@@ -89,8 +93,10 @@ impl Scatterable for Metal{
         
         let scattered = Ray::new(rec.p, reflected + self.fuzz*random_in_unit_sphere(), ray_in.time);
 
+        let albedo = self.albedo.value(rec.u, rec.v, &rec.p);
+
         if dot(scattered.direction(), rec.normal) > 0.0 {
-            return Some((self.albedo, Some(scattered)));
+            return Some((albedo, Some(scattered)));
         }else{
             return None;
         }
@@ -148,6 +154,19 @@ impl Scatterable for DiffuseLight{
     }
 }
 
+#[derive(Debug, Clone)]
+pub struct Isotropic{
+    albedo: Texture
+}
+impl Isotropic{
+    pub fn new(tex: Texture) -> Isotropic {Isotropic { albedo: tex }}
+    pub fn new_color(color: Color) -> Isotropic{Isotropic { albedo: Texture::SolidColor(SolidColor { color_value: color }) }}
+}
+impl Scatterable for Isotropic{
+    fn scatter(&self, ray_in: &Ray, rec: &HitRecord) -> Option<(Color, Option<Ray>)> {
+        Some((self.albedo.value(rec.u, rec.v, &rec.p), Some(Ray::new(rec.p, random_in_unit_sphere(), ray_in.time()))))
+    }
+}
 
 #[test]
 fn test_refract() {

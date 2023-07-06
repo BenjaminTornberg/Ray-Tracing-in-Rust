@@ -4,7 +4,7 @@ use crate::material::*;
 use crate::texture::{Texture, CheckeredTexture, NoiseTexture, ImageTexture, SolidColor};
 use crate::utils::{random_double_range, random_double};
 use crate::vector::Vec3;
-use crate::objects::{Object, Sphere, MovingSphere, XyRect, XzRect, YzRect};
+use crate::objects::{Object, Sphere, MovingSphere, XyRect, XzRect, YzRect, BoxObject, Translate, RotateY, ConstantMedium};
 
 //TODO: CREATE SETUP IN HERE
 
@@ -18,7 +18,9 @@ pub fn test_scene() -> HittableList{
     let material_ground = Material::Lambertian(Lambertian::new(checkered));
     let material_center =  Material::Lambertian(Lambertian::new_rgb(Vec3::color( 0.2, 0.3, 0.6)));
     //let material_center =  MatPtr(Rc::new(Dielectric{ir: 1.5}));
-    let material_left = Material::Metal(Metal{albedo: Vec3::color(0.8, 0.6, 0.2), fuzz: 0.0});
+    let marble = Texture::NoiseTexture(NoiseTexture::new(4.0));
+    //let cehckered = Texture::CheckeredTexture(CheckeredTexture::new_rgb(Vec3::color(0.78, 0.78, 0.78), Vec3::color(0.65, 0.30, 0.30)));
+    let material_left = Material::Metal(Metal::new(marble, 0.0));
     let material_right = Material::Dielectric(Dielectric{ir: 1.5});
 
     world.add_obj(Object::Sphere(
@@ -106,7 +108,7 @@ pub fn random_scene() -> HittableList {
                     //metal
                     let albedo = Vec3::color(random_double_range(0.5, 1.0), random_double_range(0.5, 1.0), random_double_range(0.5, 1.0));
                     let fuzz = random_double_range(0.0, 0.5);
-                    sphere_mat = Material::Metal(Metal::new(albedo, fuzz));
+                    sphere_mat = Material::Metal(Metal::new_color(albedo, fuzz));
                     world.add_obj(Object::Sphere(Sphere::new(
                         center,
                         0.2, 
@@ -135,7 +137,7 @@ pub fn random_scene() -> HittableList {
                 1.0,
                 mat2
             )));
-            let mat3 = Material::Metal(Metal{albedo: Vec3::color(0.7, 0.6, 0.5), fuzz: 0.0});
+            let mat3 = Material::Metal(Metal::new_color(Vec3::color(0.7, 0.6, 0.5), 0.0));
             world.add_obj(Object::Sphere(Sphere::new(
                 Vec3(4.0, 1.0, 0.0),
                 1.0,
@@ -189,7 +191,17 @@ pub fn cornell_box() -> HittableList{
     world.add_obj(Object::YzRect(YzRect::new(0.0, 555.0, 0.0, 555.0, 0.0, red)));
     world.add_obj(Object::XzRect(XzRect::new(0.0, 555.0, 0.0, 555.0, 0.0, white.clone())));
     world.add_obj(Object::XzRect(XzRect::new(0.0, 555.0, 0.0, 555.0, 555.0, white.clone())));
-    world.add_obj(Object::XyRect(XyRect::new(0.0, 555.0, 0.0, 555.0, 555.0, white)));
+    world.add_obj(Object::XyRect(XyRect::new(0.0, 555.0, 0.0, 555.0, 555.0, white.clone())));
+
+    let mut box_1 = Object::BoxObject(BoxObject::new(Vec3(0.0, 0.0, 65.0), Vec3(165.0, 330.0, 1650.0), white.clone()));
+    box_1 = Object::RotateY(RotateY::new_obj(box_1, 15.0));
+    box_1 = Object::Translate(Translate::new_obj(box_1, Vec3(265.0, 0.0, 295.0)));
+    world.add_obj(box_1);
+
+    let mut box_2 = Object::BoxObject(BoxObject::new(Vec3(0.0, 0.0, 0.0), Vec3(165.0, 165.0, 160.0), white.clone()));
+    box_2 = Object::RotateY(RotateY::new_obj(box_2, -18.0));
+    box_2 = Object::Translate(Translate::new_obj(box_2, Vec3(130.0, 0.0, 65.0)));
+    world.add_obj(box_2);
 
     let light = Material::DiffuseLight(DiffuseLight::new_color(Vec3::color(15.0, 15.0, 15.0)));
     world.add_obj(Object::XzRect(XzRect::new(213.0, 343.0, 227.0, 332.0, 554.0, light.clone())));
@@ -208,15 +220,105 @@ pub fn cornell_ball() -> HittableList{
     world.add_obj(Object::YzRect(YzRect::new(0.0, 555.0, 0.0, 555.0, 0.0, red)));
     world.add_obj(Object::XzRect(XzRect::new(0.0, 555.0, 0.0, 555.0, 0.0, white.clone())));
     world.add_obj(Object::XzRect(XzRect::new(0.0, 555.0, 0.0, 555.0, 555.0, white.clone())));
-    world.add_obj(Object::XyRect(XyRect::new(0.0, 555.0, 0.0, 555.0, 555.0, white)));
+    world.add_obj(Object::XyRect(XyRect::new(0.0, 555.0, 0.0, 555.0, 555.0, white.clone())));
 
     let light = Material::DiffuseLight(DiffuseLight::new_color(Vec3::color(15.0, 15.0, 15.0)));
     world.add_obj(Object::XzRect(XzRect::new(213.0, 343.0, 227.0, 332.0, 554.0, light.clone())));
 
-    let metal = Material::Metal(Metal::new(Vec3::color(0.73, 0.53, 0.63), 0.0));
-    world.add_obj(Object::Sphere(Sphere::new(Vec3(260.0, 200.0, 260.0), 200.0,metal)));
+    let marble = Texture::NoiseTexture(NoiseTexture::new(4.0));
+    let metal = Material::Metal(Metal::new(marble, 0.8));
+    world.add_obj(Object::Sphere(Sphere::new(Vec3(277.5, 200.0, 277.5), 200.0,metal)));
 
     world
 
 
+}
+pub fn cornell_smoke() -> HittableList{
+    let mut world = HittableList::default();
+
+    let red = Material::Lambertian(Lambertian::new_rgb(Vec3::color(0.65, 0.05, 0.05)));
+    let white = Material::Lambertian(Lambertian::new_rgb(Vec3::color(0.73, 0.73, 0.73)));
+    let green = Material::Lambertian(Lambertian::new_rgb(Vec3::color(0.12, 0.45, 0.15)));
+    
+    world.add_obj(Object::YzRect(YzRect::new(0.0, 555.0, 0.0, 555.0, 555.0, green)));
+    world.add_obj(Object::YzRect(YzRect::new(0.0, 555.0, 0.0, 555.0, 0.0, red)));
+    world.add_obj(Object::XzRect(XzRect::new(0.0, 555.0, 0.0, 555.0, 0.0, white.clone())));
+    world.add_obj(Object::XzRect(XzRect::new(0.0, 555.0, 0.0, 555.0, 555.0, white.clone())));
+    world.add_obj(Object::XyRect(XyRect::new(0.0, 555.0, 0.0, 555.0, 555.0, white.clone())));
+
+    let mut box_1 = Object::BoxObject(BoxObject::new(Vec3(0.0, 0.0, 65.0), Vec3(165.0, 330.0, 1650.0), white.clone()));
+    box_1 = Object::RotateY(RotateY::new_obj(box_1, 15.0));
+    box_1 = Object::Translate(Translate::new_obj(box_1, Vec3(265.0, 0.0, 295.0)));
+    world.add_obj(Object::ConstantMedium(ConstantMedium::new_color(box_1, 0.002, Vec3::color(0.0, 0.0, 0.0))));
+
+    let mut box_2 = Object::BoxObject(BoxObject::new(Vec3(0.0, 0.0, 0.0), Vec3(165.0, 165.0, 160.0), white.clone()));
+    box_2 = Object::RotateY(RotateY::new_obj(box_2, -18.0));
+    box_2 = Object::Translate(Translate::new_obj(box_2, Vec3(130.0, 0.0, 65.0)));
+    world.add_obj(Object::ConstantMedium(ConstantMedium::new_color(box_2, 0.002, Vec3::color(1.0, 1.0, 1.0))));
+
+    let light = Material::DiffuseLight(DiffuseLight::new_color(Vec3::color(7.0, 7.0, 7.0)));
+    world.add_obj(Object::XzRect(XzRect::new(113.0, 443.0, 127.0, 432.0, 554.0, light.clone())));
+
+    world
+}
+pub fn final_scene() -> HittableList{
+    let mut boxes1 = HittableList::default();
+    let ground = Material::Lambertian(Lambertian::new_rgb(Vec3::color(0.48, 0.83, 0.53)));
+
+    let boxes_per_side = 20;
+    for i in 0..boxes_per_side{
+        for j in 0..boxes_per_side{
+            let w = 100.0;
+            let x0 = -1000.0 + i as f64 * w;
+            let z0 = -1000.0 + j as f64 * w;
+            let y0 = 0.0;
+            let x1 = x0 + w;
+            let y1 = random_double_range(1.0, 101.0);
+            let z1 = z0 + w;
+
+            boxes1.add_obj(Object::BoxObject(BoxObject::new(Vec3(x0, y0, z0), Vec3(x1, y1, z1), ground.clone())));
+        }
+    }
+
+    let mut objects = HittableList::default();
+
+    objects.add(Hittables::BvhNode(BvhNode::new(boxes1, 0.0, 1.0)));
+
+    let light = Material::DiffuseLight(DiffuseLight::new_color(Vec3::color(7.0, 7.0, 7.0)));
+    objects.add_obj(Object::XzRect(XzRect::new(123.0, 432.0, 147.0, 412.0, 554.0, light)));
+    
+    let center_1 = Vec3(400.0, 400.0, 200.0);
+    let center_2 = center_1 + Vec3(30.0, 0.0, 0.0);
+    let moving_spher_material = Material::Lambertian(Lambertian::new_rgb(Vec3::color(0.7, 0.3, 0.1)));
+    objects.add_obj(Object::MovingSphere(MovingSphere::new(center_1, center_2, 0.0, 1.0, 50.0, moving_spher_material)));
+
+    objects.add_obj(Object::Sphere(Sphere::new(Vec3(260.0, 150.0, 45.0), 50.0, Material::Dielectric(Dielectric::new(1.5)))));
+    objects.add_obj(Object::Sphere(Sphere::new(Vec3(0.0, 150.0, 145.0), 50.0, Material::Metal(Metal::new_color(Vec3::color(0.8, 0.8, 0.9), 1.0)))));
+
+    let mut boundary = Object::Sphere(Sphere::new(Vec3(360.0, 150.0, 145.0), 70.0, Material::Dielectric(Dielectric::new(1.5))));
+    objects.add_obj(boundary.clone());
+    objects.add_obj(Object::ConstantMedium(ConstantMedium::new_color(boundary, 0.1, Vec3::color(0.2, 0.4, 0.9))));
+    boundary = Object::Sphere(Sphere::new(Vec3(0.0, 0.0, 0.0), 5000.0, Material::Dielectric(Dielectric::new(1.5))));
+    objects.add_obj(Object::ConstantMedium(ConstantMedium::new_color(boundary, 0.0001, Vec3::color(1.0, 1.0, 1.0))));
+
+    let emat = Material::Lambertian(Lambertian::new(Texture::ImageTexture(ImageTexture::new("src/textures/earthmap.jpeg"))));
+    objects.add_obj(Object::Sphere(Sphere::new(Vec3(400.0, 200.0, 400.0), 100.0, emat)));
+    let pertext = Texture::NoiseTexture(NoiseTexture::new(0.1));
+    objects.add_obj(Object::Sphere(Sphere::new(Vec3(220.0, 280.0, 300.0), 80.0, Material::Lambertian(Lambertian::new(pertext)))));
+
+    let mut boxes2 = HittableList::default();
+    let white = Material::Lambertian(Lambertian::new_rgb(Vec3(0.73, 0.73, 0.73)));
+    let ns = 1000;
+    for _ in 0..ns{
+        boxes2.add_obj(Object::Sphere(Sphere::new(Vec3::random_range(0.0, 165.0), 10.0, white.clone())));
+    }
+    objects.add_obj(
+        Object::Translate(
+            Translate::new_obj(
+            Object::RotateY(
+                    RotateY::new(
+                        Hittables::BvhNode(
+                            BvhNode::new(boxes2, 0.0, 1.0)), 15.0)),
+                             Vec3(-100.0, 270.0, 395.0))));
+    objects
 }

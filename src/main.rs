@@ -35,7 +35,7 @@ pub mod obj_models;
 //Not so sure how i'm going to be able to render the scene unless i use async function, but at that poin it seems too complicated
 
 //TODO: add RotateX, RotateZ
-//TODO: write a scene editor
+//TODO: write a scene editor    
 //TODO: serialize the scene constructor
 
 

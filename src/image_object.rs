@@ -3,6 +3,7 @@ use crate::utils::clamp;
 use crate::vector::Color;
 
 
+#[derive(Debug, Clone, Copy)]
 pub struct ImageParams{
     pub aspect_ratio: f64,
     pub image_width: u32,
@@ -36,6 +37,11 @@ impl Image{
             height,
             pixels: RgbImage::new(width, height),
 
+        }
+    }
+    pub fn set_col(&mut self, i: u32, colors: &Vec<Color>, samples_per_pixel: u32){
+        for j in 0..self.height{
+            self.set_pixel(i, j, colors[j as usize], samples_per_pixel)
         }
     }
 

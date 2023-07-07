@@ -14,7 +14,8 @@ pub enum Texture{
     SolidColor(SolidColor),
     CheckeredTexture(CheckeredTexture),
     NoiseTexture(NoiseTexture),
-    ImageTexture(ImageTexture)
+    ImageTexture(ImageTexture),
+    UVtest(UVtest)
 }
 impl Tex for Texture{
     fn value(&self, u: f64, v: f64, p: &Point3) -> Color {
@@ -23,6 +24,7 @@ impl Tex for Texture{
             Texture::CheckeredTexture(checkered) => checkered.value(u, v, p),
             Texture::NoiseTexture(noise) => noise.value(u, v, p),
             Texture::ImageTexture(image) => image.value(u, v, p),
+            Texture::UVtest(uv) => uv.value(u, v, p),
         }
     }
 }
@@ -113,4 +115,16 @@ impl Tex for ImageTexture{
             pixel[2] as f64 * color_scale,
         )
     }   
+}
+
+#[derive(Debug, Clone)]
+pub struct UVtest;
+
+impl UVtest {
+    pub fn new() -> UVtest { UVtest }
+}
+impl Tex for UVtest{
+    fn value(&self, u: f64, v: f64, _p: &Point3) -> Color {
+        Vec3::color(u, v, 1.0-u-v)
+    }
 }

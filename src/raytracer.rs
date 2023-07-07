@@ -4,7 +4,6 @@ use std::sync::{Arc, Mutex};
 use std::sync::mpsc::{channel, TryRecvError};
 use indicatif::ProgressBar;
 
-
 use crate::camera::Camera;
 use crate::hittable::{HittableList, Hittable};
 use crate::image_object::{Image, ImageParams};
@@ -13,13 +12,87 @@ use crate::ray::Ray;
 use crate::utils::{random_double};
 use crate::vector::{Vec3, Color};
 
-//use rayon::prelude::*;
+use rayon::prelude::*;
 
+pub fn render(cam: Camera, world: Arc<HittableList>, params: ImageParams) -> Image{
+    let start = Instant::now();
+    let mut image = Image::new(params.image_width, params.image_height);
+    let pb = ProgressBar::new(((params.image_width)) as u64);
+    let columns: Vec<_> = (0..params.image_width).into_par_iter().map(|i| {
+        let world_arc = Arc::clone(&world);
+        let colss = render_collumn(i, cam, world_arc, params);
+        pb.inc(1);
+        colss
+    }).collect();
+    pb.finish();
+    for (i, col) in columns.iter().enumerate(){
+        image.set_col(i as u32, col, params.samples_per_pixel);
+    }
+    eprintln!("\nTime Elapsed {:.2}s", start.elapsed().as_millis() as f64/1000.0);
+    image
+}
+
+fn render_collumn(i: u32, cam: Camera, world: Arc<HittableList>, params: ImageParams)-> Vec<Color>{
+    let mut col_colors = Vec::with_capacity(params.image_height as usize);
+    for j in 0..params.image_height{
+        let mut pixel_color = Vec3::color(0.0, 0.0, 0.0);
+        for _ in 0..params.samples_per_pixel {
+            let u = (i as f64 + random_double()) / (params.image_width - 1) as f64;
+            let v = (j as f64 + random_double()) / (params.image_height - 1) as f64;
+
+            let r = cam.get_ray(u, v);
+            pixel_color += ray_color(r, params.background, &world, params.max_depth);
+        }
+        col_colors.push(pixel_color);
+    }
+    col_colors
+}
+
+
+fn ray_color(r: Ray, background: Color, world: &HittableList, depth: u32) -> Color{
+    if depth <= 0{
+        return Vec3::color(0.0, 0.0, 0.0);
+    }
+    let hit = world.hit(&r, 0.001, f64::MAX);
+
+    match hit {
+        Some(hit_record) => {
+            let emitted = hit_record.material.emmited(hit_record.u, hit_record.v, &hit_record.p);
+            let mut scattered_color = Vec3::color(0.0, 0.0, 0.0);
+            let mut attenuation = Vec3::color(0.0, 0.0, 0.0);
+
+            let scatter = hit_record.material.scatter(&r, &hit_record);
+            match scatter {
+                Some((scattered_attenuation, scattered_ray)) => {
+                    attenuation = scattered_attenuation;
+
+                    if let Some(scattered_ray) = scattered_ray {
+                        scattered_color = ray_color(
+                            scattered_ray,
+                            background,
+                            world,
+                            depth - 1
+                        );
+                    } 
+                }
+                None => {}
+            }
+
+            emitted + (attenuation * scattered_color)
+        },
+        None => {
+            return background;
+        }
+
+    }
+}
+
+
+//OLD threading Slower by like 26.55%
 // Define the number of threads
 const NUM_THREADS: usize = 4;
 
-//TODO: Improve the threading
-pub fn render(cam: Camera, world: Arc<HittableList>, image: Arc<Mutex<Image>>, params: ImageParams){
+pub fn render_n(cam: Camera, world: Arc<HittableList>, image: Arc<Mutex<Image>>, params: ImageParams){
     let start = Instant::now();
 
     // Create a work queue using a channel
@@ -31,9 +104,6 @@ pub fn render(cam: Camera, world: Arc<HittableList>, image: Arc<Mutex<Image>>, p
             tx.send((i, j)).unwrap();
         }
     }
-
-    //TODO: use rayon to optimize threading
-    //TODO: instead of splitting by pixel, split by band 
 
     let pb = Arc::new(Mutex::new(ProgressBar::new(((params.image_height-1) * (params.image_width - 1)) as u64)));
     
@@ -79,43 +149,4 @@ pub fn render(cam: Camera, world: Arc<HittableList>, image: Arc<Mutex<Image>>, p
     let image_lock = image.lock().unwrap();
     eprintln!("Outputting to file...");
     image_lock.output();
-}
-
-
-fn ray_color(r: Ray, background: Color, world: &HittableList, depth: u32) -> Color{
-    if depth <= 0{
-        return Vec3::color(0.0, 0.0, 0.0);
-    }
-    let hit = world.hit(&r, 0.001, f64::MAX);
-
-    match hit {
-        Some(hit_record) => {
-            let emitted = hit_record.material.emmited(hit_record.u, hit_record.v, &hit_record.p);
-            let mut scattered_color = Vec3::color(0.0, 0.0, 0.0);
-            let mut attenuation = Vec3::color(0.0, 0.0, 0.0);
-
-            let scatter = hit_record.material.scatter(&r, &hit_record);
-            match scatter {
-                Some((scattered_attenuation, scattered_ray)) => {
-                    attenuation = scattered_attenuation;
-
-                    if let Some(scattered_ray) = scattered_ray {
-                        scattered_color = ray_color(
-                            scattered_ray,
-                            background,
-                            world,
-                            depth - 1
-                        );
-                    } 
-                }
-                None => {}
-            }
-
-            emitted + (attenuation * scattered_color)
-        },
-        None => {
-            return background;
-        }
-
-    }
 }

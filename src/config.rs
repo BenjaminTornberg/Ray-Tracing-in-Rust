@@ -1,11 +1,11 @@
 use crate::bvh::{BvhNode, Hittables};
 use crate::hittable::{HittableList};
 use crate::material::*;
-use crate::texture::{Texture, CheckeredTexture, NoiseTexture, ImageTexture, SolidColor};
+use crate::texture::{Texture, CheckeredTexture, NoiseTexture, ImageTexture, SolidColor, UVtest};
 use crate::utils::{random_double_range, random_double};
 use crate::vector::Vec3;
-use crate::objects::{Object, Sphere, MovingSphere, XyRect, XzRect, YzRect, BoxObject, Translate, RotateY, ConstantMedium};
-
+use crate::objects::{Object, Sphere, MovingSphere, XyRect, XzRect, YzRect, BoxObject, Translate, RotateY, ConstantMedium, Triangle};
+use crate::obj_models::ObjModel;
 //TODO: CREATE SETUP IN HERE
 
 
@@ -233,7 +233,6 @@ pub fn cornell_ball() -> HittableList{
 
     world
 
-
 }
 pub fn cornell_smoke() -> HittableList{
     let mut world = HittableList::default();
@@ -324,3 +323,71 @@ pub fn final_scene() -> HittableList{
                              Vec3(-100.0, 270.0, 395.0))));
     objects
 }
+
+pub fn cornell_triangle() -> HittableList{
+    let mut world = HittableList::default();
+
+    let red = Material::Lambertian(Lambertian::new_rgb(Vec3::color(0.65, 0.05, 0.05)));
+    let white = Material::Lambertian(Lambertian::new_rgb(Vec3::color(0.73, 0.73, 0.73)));
+    let green = Material::Lambertian(Lambertian::new_rgb(Vec3::color(0.12, 0.45, 0.15)));
+    
+    world.add_obj(Object::YzRect(YzRect::new(0.0, 555.0, 0.0, 555.0, 555.0, green)));
+    world.add_obj(Object::YzRect(YzRect::new(0.0, 555.0, 0.0, 555.0, 0.0, red)));
+    world.add_obj(Object::XzRect(XzRect::new(0.0, 555.0, 0.0, 555.0, 0.0, white.clone())));
+    world.add_obj(Object::XzRect(XzRect::new(0.0, 555.0, 0.0, 555.0, 555.0, white.clone())));
+    world.add_obj(Object::XyRect(XyRect::new(0.0, 555.0, 0.0, 555.0, 555.0, white.clone())));
+
+
+    let a = Vec3(455.0, 255.0, 450.0);
+    let b = Vec3(455.0, 20.0, 150.0);
+    let c = Vec3(100.0, 20.0, 150.0);
+    let triag = Object::Triangle(Triangle::new(a, b, c, Material::Lambertian(Lambertian::new(Texture::UVtest(UVtest::new())))));
+    world.add_obj(triag);
+
+    //world.add_obj(Object::XyRect(XyRect::new_ss(0.0, 555.0, 0.0, 555.0, 0.0, white.clone(), Vec3(0.0, 0.0, 1.0))));
+
+    let light = Material::DiffuseLight(DiffuseLight::new_color(Vec3::color(7.0, 7.0, 7.0)));
+    world.add_obj(Object::XzRect(XzRect::new(113.0, 443.0, 127.0, 432.0, 554.0, light.clone())));
+
+    world
+}
+
+pub fn cornell_chess() -> HittableList{
+    let mut world = HittableList::default();
+
+    let red = Material::Lambertian(Lambertian::new_rgb(Vec3::color(0.65, 0.05, 0.05)));
+    let white = Material::Lambertian(Lambertian::new_rgb(Vec3::color(0.73, 0.73, 0.73)));
+    let green = Material::Lambertian(Lambertian::new_rgb(Vec3::color(0.12, 0.45, 0.15)));
+    
+    world.add_obj(Object::YzRect(YzRect::new(0.0, 555.0, 0.0, 555.0, 555.0, green)));
+    world.add_obj(Object::YzRect(YzRect::new(0.0, 555.0, 0.0, 555.0, 0.0, red)));
+    world.add_obj(Object::XzRect(XzRect::new(0.0, 555.0, 0.0, 555.0, 0.0, white.clone())));
+    world.add_obj(Object::XzRect(XzRect::new(0.0, 555.0, 0.0, 555.0, 555.0, white.clone())));
+    world.add_obj(Object::XyRect(XyRect::new(0.0, 555.0, 0.0, 555.0, 555.0, white.clone())));
+
+
+    //let chess_mat = Material::Lambertian(Lambertian::new_rgb(Vec3::color(0.73, 0.73, 0.73)));
+    let chess_mat = Material::Metal(Metal::new_color(Vec3(0.73, 0.73, 0.73), 0.0));
+    let obj = ObjModel::new("src/models/queen-low-poly.obj", chess_mat, 60.0);
+    let object_bhv = Hittables::BvhNode(BvhNode::new(obj.primitives, 0.0, 1.0));
+    let model = Object::Translate(Translate::new(object_bhv, Vec3(277.5, 0.0, 277.5)));
+
+    world.add_obj(model);
+
+    world.add_obj(Object::XyRect(XyRect::new_ss(0.0, 555.0, 0.0, 555.0, 0.0, white.clone(), Vec3(0.0, 0.0, 1.0))));
+
+    let light = Material::DiffuseLight(DiffuseLight::new_color(Vec3::color(7.0, 7.0, 7.0)));
+    world.add_obj(Object::XzRect(XzRect::new(113.0, 443.0, 127.0, 432.0, 554.0, light.clone())));
+
+    world
+}
+
+pub fn obj_test() -> HittableList{
+    let mut world = HittableList::default();
+    let obj = ObjModel::new("src/models/queen-low-poly.obj", Material::Lambertian(Lambertian::new_rgb(Vec3::color(0.73, 0.73, 0.73))), 1.0);
+    world.add(Hittables::BvhNode(BvhNode::new(obj.primitives, 0.0, 1.0)));
+    world
+
+}
+
+//eventually render this: https://sketchfab.com/3d-models/low-poly-chess-set-0f440e2b01ca42f8b3fdee8178c51f20

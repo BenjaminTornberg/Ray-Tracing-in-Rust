@@ -1,7 +1,7 @@
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 use camera::Camera;
 use config::*;
-use image_object::{ImageParams, Image};
+use image_object::ImageParams;
 use raytracer::render;
 use vector::Vec3;
 
@@ -25,19 +25,16 @@ pub mod aabb;
 pub mod bvh;
 pub mod texture;
 pub mod perlin;
+pub mod obj_models;
 
 
 //use minifb::{Window, WindowOptions, ScaleMode};
 //might be fun to try creating a ray tracing by rendering rays to the screen individually
 //but what I would have to do is render the pixels to a vec than periodically start taking 
 //them from the vec calculate the color by storing the amoun of ray per pixel we have and render it to the screen
-//Not so sure how i'm going to be able to render the scene unless i use asyn function, but at that poin it seems too complicated
+//Not so sure how i'm going to be able to render the scene unless i use async function, but at that poin it seems too complicated
 
-//TODO: performance increases: use rayon for threading, minimize mutex and lock, cut down on cloning during the render(use Arc or Rc instead of copying material)
-
-//TODO: add RotateX, RotateZ and Scale in preperation for obj
-//TODO: add triangles
-//TODO: add ability to render .obj files
+//TODO: add RotateX, RotateZ
 //TODO: write a scene editor
 //TODO: serialize the scene constructor
 
@@ -62,7 +59,7 @@ fn main() {
     let mut aperture = 0.0;
 
     //scene change
-    let scene_number = 6;
+    let scene_number = 1;
 
     let world = match scene_number {
         0 => {
@@ -75,6 +72,7 @@ fn main() {
         1 => {
             let world = random_scene();
             background = Vec3::color(0.70, 0.80, 1.00);
+            samples_per_pixel = 50;
             look_from = Vec3(13.0, 2.0, 3.0);
             look_at = Vec3(0.0, 0.0, 0.0);
             vfov = 20.0;
@@ -151,7 +149,43 @@ fn main() {
             vfov = 40.0;
             Some(world)
 
-        }
+        },
+        9 => {
+            let world = cornell_triangle();
+            background = Vec3::color(0.70, 0.80, 1.00);
+            aspect_ratio = 1.0;
+            image_width = 600;
+            samples_per_pixel = 200;
+            look_from = Vec3(278.0, 278.0, -800.0);
+            look_at = Vec3(278.0, 278.0, 0.0);
+            vfov = 40.0;
+            Some(world)
+        },
+        10 => {
+            let world = cornell_chess();
+            //background = Vec3::color(0.70, 0.80, 1.00);
+            aspect_ratio = 1.0;
+            image_width = 600;
+            samples_per_pixel = 400;
+            look_from = Vec3(278.0, 278.0, -800.0);
+            look_at = Vec3(278.0, 278.0, 0.0);
+            vfov = 40.0;
+            Some(world)
+
+        },
+        11 =>{
+            let world = obj_test();
+            background = Vec3::color(0.70, 0.80, 1.00);
+            aspect_ratio = 1.0;
+            image_width = 600;
+            samples_per_pixel = 200;
+            look_at = Vec3(0.0, 0.0, 0.0);
+            look_from = Vec3(26.0, 3.0, 6.0);
+            vfov = 40.0;
+            Some(world)
+
+
+        },
         _ => {
             eprintln!("Invalid scene selected");
             None 
@@ -161,10 +195,10 @@ fn main() {
     let cam = Camera::new(look_from, look_at, vup, vfov, aspect_ratio, dist_to_focus, aperture, 0.0, 1.0);
 
     let params = ImageParams::new(aspect_ratio, image_width, samples_per_pixel, max_depth, background);
-    let image = Image::new(params.image_width, params.image_height);
 
     let world_arc = Arc::new(world.unwrap());
-    let image_mutex = Arc::new(Mutex::new(image));
 
-    render(cam, world_arc, image_mutex, params);
+    let image = render(cam, world_arc, params);
+    eprintln!("Outputting to file...");
+    image.output();
 }

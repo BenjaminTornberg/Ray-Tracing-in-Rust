@@ -5,6 +5,8 @@ use super::material::Material;
 use crate::aabb::Aabb;
 use crate::bvh::Hittables;
 use crate::material::Isotropic;
+use crate::material::Lambertian;
+use crate::obj_models::ObjModel;
 use crate::texture::Texture;
 use crate::utils::PI;
 use crate::utils::deg_to_rad;
@@ -21,6 +23,9 @@ pub enum Object{
     Translate(Translate),
     RotateY(RotateY),
     ConstantMedium(ConstantMedium),
+    Triangle(Triangle),
+    ObjModel(ObjModel),
+    Scale(Scale),
 }
 impl Hittable for Object{
     fn hit(&self, r: &Ray, t_min: f64, t_max: f64)-> Option<HitRecord> {
@@ -34,6 +39,9 @@ impl Hittable for Object{
             Object::Translate(t) => t.hit(r, t_min, t_max),
             Object::RotateY(ry) => ry.hit(r, t_min, t_max),
             Object::ConstantMedium(cm) => cm.hit(r, t_min, t_max),
+            Object::Triangle(triag) => triag.hit(r, t_min, t_max),
+            Object::ObjModel(obj) => obj.hit(r, t_min, t_max),
+            Object::Scale(sc) => sc.hit(r, t_min, t_max),
         }
     }
     fn bounding_box(&self, time0: f64, time1: f64) -> Option<Aabb> {
@@ -46,7 +54,10 @@ impl Hittable for Object{
             Object::BoxObject(b) => b.bounding_box(time0, time1),
             Object::Translate(t) => t.bounding_box(time0, time1),
             Object::RotateY(ry) => ry.bounding_box(time0, time1),
-            Object::ConstantMedium(cm) => cm.bounding_box(time0, time1), 
+            Object::ConstantMedium(cm) => cm.bounding_box(time0, time1),
+            Object::Triangle(triag) => triag.bounding_box(time0, time1),
+            Object::ObjModel(obj) => obj.bounding_box(time0, time1),
+            Object::Scale(sc) => sc.bounding_box(time0, time1), 
         }
     }
 }
@@ -514,6 +525,57 @@ impl Hittable for RotateY{
         hr
     }
 }
+//TODO: RotateZ
+//TODO: RotateX
+//TODO: make scale work
+#[derive(Debug, Clone)]
+pub struct Scale{
+    obj: Box<Hittables>,
+    factor: f64,
+    //bbox: Option<Aabb>,
+}
+impl Scale{
+    pub fn new_obj(obj: Object, factor: f64) -> Scale{ Scale::new(Hittables::Object(obj), factor)}
+    pub fn new(obj: Hittables, factor: f64) -> Scale {
+        Scale{obj: Box::new(obj), factor} 
+    }
+}
+impl Hittable for Scale{
+    //to fix this i could center the object on 0.0 and then scale it
+    fn bounding_box(&self, time0: f64, time1: f64) -> Option<Aabb> {
+        if let Some(bounding_box) = self.obj.bounding_box(time0, time1){
+            return Some(Aabb::new(
+                bounding_box.minimum * self.factor, //this only works if its less the 0.0
+                bounding_box.maximum * self.factor
+            ));
+        }
+        None
+    }
+    fn hit(&self, r: &Ray, t_min: f64, t_max: f64)->  Option<HitRecord> {
+        let moved_ray = Ray::new(r.origin() / self.factor, r.direction(), r.time());
+        if let Some(rec) = self.obj.hit(&moved_ray, t_min, t_max){
+            let p = rec.p * self.factor;
+            let front_face = dot(moved_ray.direction(), rec.normal) < 0.0;
+            let normal = if front_face {
+                rec.normal
+            } else { 
+                -rec.normal
+            };
+            return Some(
+                HitRecord{
+                    p,
+                    normal,
+                    material: rec.material,
+                    t: rec.t,
+                    u: rec.u,
+                    v: rec.v,
+                    front_face,
+                }
+            )
+        }
+        None
+    }
+}
 
 #[derive(Debug, Clone)]
 pub struct ConstantMedium{
@@ -564,5 +626,81 @@ impl Hittable for ConstantMedium{
             }
         }
         None
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct Triangle{
+    a: Vec3,
+    b: Vec3,
+    c: Vec3,
+    normal: Vec3,
+    material: Material
+}
+impl Triangle {
+    pub fn new(a: Point3, b: Point3, c: Point3, material: Material) -> Triangle{
+        let normal = cross(b - a, c - a);
+        Triangle { a, b, c, normal, material}
+    }
+    pub fn new_normal(a: Point3, b: Point3, c: Point3, normal: Vec3, material: Material) -> Triangle{
+        Triangle { a, b, c, normal, material}
+    }
+    pub fn new_color(a: Point3, b: Point3, c: Point3, color: Color) -> Triangle{
+        let normal = cross(b - a, c - a);
+        Triangle { a, b, c, normal, material: Material::Lambertian(Lambertian::new_rgb(color))}
+    }
+}
+impl Hittable for Triangle{
+    fn bounding_box(&self, _time0: f64, _time1: f64) -> Option<Aabb> {
+        //creates a box surrounding the triangle
+        let x0 = self.a.x().min(self.b.x()).min(self.c.x());
+        let x1 = self.a.x().max(self.b.x()).max(self.c.x());
+        let y0 = self.a.y().min(self.b.y()).min(self.c.y());
+        let y1 = self.a.y().max(self.b.y()).max(self.c.y());
+        let z0 = self.a.z().min(self.b.z()).min(self.c.z());
+        let z1 = self.a.z().max(self.b.z()).max(self.c.z());
+        //if max == min then add some padding
+        let pad_x = if x0 == x1 {0.0001} else{0.0};
+        let pad_y = if y0 == y1 {0.0001} else{0.0};
+        let pad_z = if z0 == z1 {0.0001} else{0.0};
+
+        Some(Aabb::new(Vec3(x0-pad_x, y0-pad_y, z0-pad_z), Vec3(x1+pad_x, y1+pad_y, z1+pad_z)))
+    }
+    fn hit(&self, r: &Ray, t_min: f64, t_max: f64)->  Option<HitRecord> {
+        let ab = self.b - self.a;
+        let ac = self.c - self.a;
+        let p_vec = cross(r.dir, ac);
+        let det = dot(ab, p_vec);
+        
+        //if I want to implement backface culling then i can remove the abs() function
+        if det.abs() < f64::EPSILON{
+            return None;
+        }
+
+        let inv_det = 1.0 / det;
+        let t_vec = r.origin() - self.a;
+        let u = dot(t_vec, p_vec) * inv_det;
+        if u < 0.0 || u > 1.0{
+            return None;
+        }
+
+        let q_vec = cross(t_vec, ab);
+        let v = dot(r.dir, q_vec) * inv_det;
+        if v < 0.0 || u+v > 1.0{
+            return None;
+        }
+
+        let t = dot(ac, q_vec) * inv_det;
+
+        if t < t_min || t > t_max{
+            return None;
+        }
+        let front_face = dot(r.direction(), self.normal) < 0.0;
+        let normal = if front_face {
+            self.normal
+        } else { 
+            -self.normal
+        };
+        Some(HitRecord {p: r.at(t), normal, material: &self.material, t, u, v, front_face})
     }
 }

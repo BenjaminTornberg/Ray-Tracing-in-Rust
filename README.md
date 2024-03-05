@@ -2,11 +2,10 @@
 #### _A Mediocre Raytracer_
 
 
-A ray tracer made entirely in rust, based off of the book Ray Tracing in One Weekend with some add ons and 'improvements'.
+A ray tracer made entirely in rust, based off of the book Ray Tracing in One Weekend with some add ons and improvements.
 
-- Render scenes and object... eventually
-- See beautiful renders... at the cost of your computer
-- ✨Math✨
+- Render scenes and object
+- See beautiful renders
 
 ## Features
 
@@ -20,11 +19,10 @@ A ray tracer made entirely in rust, based off of the book Ray Tracing in One Wee
 
 ## Installation
 
-Figured it out yourself
+Clone repostory and run using cargo.
 
 ## License
 
 MIT
 
-**Plagerized Software, Hell Yeah!**
 
